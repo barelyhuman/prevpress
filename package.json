@@ -11,10 +11,13 @@
     "prevpress": "./cli.js"
   },
   "scripts": {
-    "test": "echo true"
+    "test": "echo true",
+    "docs:dev": "node cli.js dev ./docs",
+    "docs:build": "node cli.js build ./docs ./dist"
   },
   "dependencies": {
     "defu": "^6.1.4",
+    "esbuild-multicontext": "^0.8.0",
     "marked": "^12.0.0",
     "preact": ">=10",
     "preact-render-to-string": "^6.4.0",

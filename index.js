@@ -1,21 +1,26 @@
 import mdx from '@mdx-js/esbuild'
-import esbuild from 'esbuild'
-import { Fragment, h } from 'preact'
-import path, { dirname, join } from 'node:path'
-import fs from 'node:fs'
-import renderToString from 'preact-render-to-string'
 import { defu } from 'defu'
+import esbuild from 'esbuild'
+import { createContext, CONSTANTS } from 'esbuild-multicontext'
+import fs from 'node:fs'
+import path, { dirname, join } from 'node:path'
+import { Fragment, h } from 'preact'
+import renderToString from 'preact-render-to-string'
 
-import glob from 'tiny-glob'
+import { marked } from 'marked'
 import { mkdir } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
-import { marked } from 'marked'
+import glob from 'tiny-glob'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const html = String.raw
 const defaultOptions = {
   baseURL: '/',
+  dev: {
+    enabled: false,
+    port: 3000
+  },
   root: './content',
   outdir: './dist',
   template: html`
@@ -41,7 +46,7 @@ const defaultOptions = {
  */
 export async function compile (options = {}) {
   const config = defu(options, defaultOptions)
-  const { root, template, outdir, baseURL } = config
+  const { root, template, outdir, baseURL, dev } = config
 
   const usableBaseURL = !baseURL.endsWith('/') ? join(baseURL, '/') : baseURL
 
@@ -57,7 +62,7 @@ export async function compile (options = {}) {
     cwd: root
   })
 
-  const output = await esbuild.build({
+  const rootBuildOptions = {
     entryPoints: mdxFiles,
     format: 'esm',
     bundle: true,
@@ -74,14 +79,17 @@ export async function compile (options = {}) {
         jsxImportSource: 'preact'
       })
     ]
-  })
+  }
+
+  const baseContext = await esbuild.context(rootBuildOptions)
+  const output = await baseContext.rebuild()
 
   const markdownOutput = await Promise.all(
-    mdfiles.map(async x => {
+    mdfiles.map(async (x) => {
       const content = await fs.promises.readFile(x, 'utf8')
-      const destPath = x.replace(path.normalize(root), path.join(outdir)).replace(
-        '.md', '.html'
-      )
+      const destPath = x
+        .replace(path.normalize(root), path.join(outdir))
+        .replace('.md', '.html')
       return {
         source: x,
         dest: destPath,
@@ -92,8 +100,21 @@ export async function compile (options = {}) {
   )
 
   const metaFile = output.metafile.outputs
-  for (const key of Object.keys(metaFile)) {
-    const scriptOut = await esbuild.build({
+  const outputEntryKeys = Object.keys(metaFile)
+
+  const buildContext = createContext()
+
+  buildContext.hook(CONSTANTS.BUILD_ERROR, (error) => {
+    console.error('[prevpress]: Building Module failed with error:', error)
+  })
+
+  buildContext.hook(CONSTANTS.WATCH_ERROR, (error) => {
+    console.error('[prevpress]: Watching modules failed with error:', error)
+  })
+
+  for (const key of outputEntryKeys) {
+    const _key = pathToKey(key)
+    buildContext.add(`${_key}:esm`, {
       entryPoints: [path.join(__dirname, 'runtime/client.js')],
       format: 'esm',
       bundle: true,
@@ -112,33 +133,62 @@ export async function compile (options = {}) {
       jsx: 'automatic',
       jsxImportSource: 'preact'
     })
+  }
 
-    const outputFile = Object.keys(scriptOut.metafile.outputs)[0]
+  for (const mdOutput of markdownOutput) {
+    const str = template
+      .replace('<!--app-->', mdOutput.html)
+      .replace('<!--scripts-->', '')
+    await fs.promises.writeFile(mdOutput.dest, str, 'utf8')
+  }
 
-    const cachePath = path.join(outdir, '.cache')
-    const finalFile = key.replace(cachePath, outdir).replace(/.js$/, '.html')
-
-    const mod = await import(path.resolve(key)).then((d) => d.default)
-    const node = h(Fragment, {}, h(mod))
-    const str = template.replace('<!--app-->', renderToString(node)).replace(
-      '<!--scripts-->',
-      `
+  outputEntryKeys.forEach((key) => {
+    const _key = pathToKey(key)
+    buildContext.hook(`${_key}:esm:error`, async (error) => {
+      console.error(`Error building \`${key}\`:`, error)
+    })
+    buildContext.hook(`${_key}:esm:complete`, async (buildOutput) => {
+      const outputFile = Object.keys(buildOutput.metafile.outputs)[0]
+      const cachePath = path.join(outdir, '.cache')
+      const finalFile = key.replace(cachePath, outdir).replace(/.js$/, '.html')
+      const mod = await import(path.resolve(key)).then((d) => d.default)
+      const node = h(Fragment, {}, h(mod))
+      const str = template.replace('<!--app-->', renderToString(node)).replace(
+        '<!--scripts-->',
+        `
       <script src="${outputFile.replace(
         path.normalize(outdir) + '/',
         usableBaseURL
       )}" type="module"></script>
     `
-    )
-    await mkdir(dirname(finalFile), { recursive: true })
-    await fs.promises.writeFile(finalFile, str, 'utf8')
-    await fs.promises.rm(path.join(outdir, '.cache'), {
-      force: true,
-      recursive: true
+      )
+      await mkdir(dirname(finalFile), { recursive: true })
+      await fs.promises.writeFile(finalFile, str, 'utf8')
+      if (!dev.enabled) {
+        await fs.promises.rm(path.join(outdir, '.cache'), {
+          force: true,
+          recursive: true
+        })
+      }
     })
-  }
+  })
 
-  for (const mdOutput of markdownOutput) {
-    const str = template.replace('<!--app-->', mdOutput.html).replace('<!--scripts-->', '')
-    await fs.promises.writeFile(mdOutput.dest, str, 'utf8')
+  await buildContext.build()
+
+  if (dev.enabled) {
+    await buildContext.watch()
+    await baseContext.watch()
+    await baseContext.serve({
+      servedir: outdir,
+      port: dev.port
+    })
+    console.log(`Serving assets on port: ${dev.port}`)
+  } else {
+    await baseContext.dispose()
+    await buildContext.dispose()
   }
+}
+
+function pathToKey (toConvert) {
+  return toConvert.replace('/', '__')
 }
