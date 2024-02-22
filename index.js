@@ -62,7 +62,9 @@ export async function compile (options = {}) {
     },
     jsx: 'automatic',
     jsxImportSource: 'preact',
-    plugins: [mdx({ jsxImportSource: 'preact', baseUrl: usableBaseURL })]
+    plugins: [mdx({
+      jsxImportSource: 'preact'
+    })]
   })
 
   const metaFile = output.metafile.outputs
