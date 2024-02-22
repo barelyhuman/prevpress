@@ -29,6 +29,7 @@ const defaultOptions = {
         <div id="root">
           <!--app-->
         </div>
+        <!--scripts-->
       </body>
     </html>
   `
@@ -52,7 +53,6 @@ export async function compile (options = {}) {
   const output = await esbuild.build({
     entryPoints: files,
     format: 'esm',
-    splitting: true,
     bundle: true,
     outdir: path.join(outdir, '.cache'),
     metafile: true,
@@ -62,9 +62,11 @@ export async function compile (options = {}) {
     },
     jsx: 'automatic',
     jsxImportSource: 'preact',
-    plugins: [mdx({
-      jsxImportSource: 'preact'
-    })]
+    plugins: [
+      mdx({
+        jsxImportSource: 'preact'
+      })
+    ]
   })
 
   const metaFile = output.metafile.outputs
@@ -74,6 +76,8 @@ export async function compile (options = {}) {
       format: 'esm',
       bundle: true,
       entryNames: '[name]-[hash]',
+      assetNames: 'assets/[name]-[hash]',
+      chunkNames: 'chunks/[name]-[hash]',
       outdir: path.join(outdir, 'public'),
       metafile: true,
       splitting: true,
@@ -90,20 +94,19 @@ export async function compile (options = {}) {
     const outputFile = Object.keys(scriptOut.metafile.outputs)[0]
 
     const cachePath = path.join(outdir, '.cache')
-    const finalFile = key
-      .replace(cachePath, outdir)
-      .replace(/.js$/, '.html')
+    const finalFile = key.replace(cachePath, outdir).replace(/.js$/, '.html')
 
     const mod = await import(path.resolve(key)).then((d) => d.default)
-    const node = h(
-      Fragment, {},
-      h(mod),
-      h('script', {
-        type: 'module',
-        src: outputFile.replace(path.normalize(outdir) + '/', usableBaseURL)
-      })
+    const node = h(Fragment, {}, h(mod))
+    const str = template.replace('<!--app-->', renderToString(node)).replace(
+      '<!--scripts-->',
+      `
+      <script src="${outputFile.replace(
+        path.normalize(outdir) + '/',
+        usableBaseURL
+      )}" type="module"></script>
+    `
     )
-    const str = template.replace('<!--app-->', renderToString(node))
     await mkdir(dirname(finalFile), { recursive: true })
     await fs.promises.writeFile(finalFile, str, 'utf8')
     await fs.promises.rm(path.join(outdir, '.cache'), {

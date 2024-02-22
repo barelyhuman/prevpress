@@ -1,9 +1,8 @@
-import { h, render } from 'preact'
+import { hydrate } from 'preact'
 
 // eslint-disable-next-line
-const ComponentMod = await import(__PPRESS_RENDERED_PAGE)
-
-render(
-  h(ComponentMod.default, {}),
-  document.getElementById('root')
+const Component = await import(__PPRESS_RENDERED_PAGE).then(
+  (mod) => 'default' in mod ? mod.default : mod
 )
+
+hydrate(<Component />, document.getElementById('root'))
