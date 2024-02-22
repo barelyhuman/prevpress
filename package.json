@@ -1,0 +1,28 @@
+{
+  "name": "prevpress",
+  "version": "0.0.0",
+  "description": "",
+  "keywords": [],
+  "license": "MIT",
+  "author": "reaper <ahoy@barelyhuman.dev>",
+  "type": "module",
+  "main": "index.js",
+  "bin": {
+    "prevpress": "./cli.js"
+  },
+  "scripts": {
+    "test": "echo true"
+  },
+  "dependencies": {
+    "defu": "^6.1.4",
+    "preact": ">=10",
+    "preact-render-to-string": "^6.4.0",
+    "sade": "^1.8.1",
+    "tiny-glob": "^0.2.9"
+  },
+  "devDependencies": {
+    "@mdx-js/esbuild": "^3.0.1",
+    "esbuild": "^0.20.1",
+    "standard": "^17.1.0"
+  }
+}
