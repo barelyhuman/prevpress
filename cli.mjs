@@ -2,10 +2,15 @@
 
 import sade from 'sade'
 import { compile } from './index.js'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { readFileSync } from 'node:fs'
 
+const __dirname = dirname(fileURLToPath(import.meta.url))
 const prog = sade('prevpress')
+const version = (() => JSON.parse(readFileSync(join(__dirname, 'package.json'), 'utf8')).version)()
 
-prog.version('1.0.5').option('--help, -h', 'An example global flag')
+prog.version(version).option('--help, -h', 'An example global flag')
 
 prog
   .command('build [content] [dest]')
