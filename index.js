@@ -9,6 +9,7 @@ import { defu } from 'defu'
 import glob from 'tiny-glob'
 import { mkdir } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
+import { marked } from 'marked'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -44,14 +45,20 @@ export async function compile (options = {}) {
 
   const usableBaseURL = !baseURL.endsWith('/') ? join(baseURL, '/') : baseURL
 
-  const files = await glob('./**/*.mdx', {
+  const mdxFiles = await glob('./**/*.mdx', {
+    absolute: true,
+    filesOnly: true,
+    cwd: root
+  })
+
+  const mdfiles = await glob('./**/*.md', {
     absolute: true,
     filesOnly: true,
     cwd: root
   })
 
   const output = await esbuild.build({
-    entryPoints: files,
+    entryPoints: mdxFiles,
     format: 'esm',
     bundle: true,
     outdir: path.join(outdir, '.cache'),
@@ -68,6 +75,21 @@ export async function compile (options = {}) {
       })
     ]
   })
+
+  const markdownOutput = await Promise.all(
+    mdfiles.map(async x => {
+      const content = await fs.promises.readFile(x, 'utf8')
+      const destPath = x.replace(path.normalize(root), path.join(outdir)).replace(
+        '.md', '.html'
+      )
+      return {
+        source: x,
+        dest: destPath,
+        raw: content,
+        html: marked(content)
+      }
+    })
+  )
 
   const metaFile = output.metafile.outputs
   for (const key of Object.keys(metaFile)) {
@@ -113,5 +135,10 @@ export async function compile (options = {}) {
       force: true,
       recursive: true
     })
+  }
+
+  for (const mdOutput of markdownOutput) {
+    const str = template.replace('<!--app-->', mdOutput.html).replace('<!--scripts-->', '')
+    await fs.promises.writeFile(mdOutput.dest, str, 'utf8')
   }
 }
