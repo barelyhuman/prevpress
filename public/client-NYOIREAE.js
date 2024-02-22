@@ -4,7 +4,7 @@ import {
 } from "./chunk-PZAWEIKY.js";
 
 // runtime/client.js
-var ComponentMod = await import("./-RZ2P3QS2.js");
+var ComponentMod = await import("./-CR5O554I.js");
 B(
   y(ComponentMod.default, {}),
   document.getElementById("root")
