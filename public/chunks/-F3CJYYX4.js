@@ -144,7 +144,7 @@ function Counter() {
   );
 }
 function Navbar() {
-  return /* @__PURE__ */ u("a", { href: "/guides", children: "Guides" });
+  return /* @__PURE__ */ u("header", { children: /* @__PURE__ */ u("nav", { children: /* @__PURE__ */ u("a", { href: "/guides", children: "Guides" }) }) });
 }
 function _createMdxContent(props) {
   const _components = {
