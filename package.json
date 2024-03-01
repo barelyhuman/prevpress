@@ -8,12 +8,12 @@
   "type": "module",
   "main": "index.js",
   "bin": {
-    "prevpress": "./cli.js"
+    "prevpress": "./cli.mjs"
   },
   "scripts": {
     "test": "echo true",
-    "docs:dev": "node cli.js dev ./docs",
-    "docs:build": "node cli.js build ./docs ./dist"
+    "docs:dev": "node ./cli.mjs dev ./docs",
+    "docs:build": "node ./cli.mjs build ./docs ./dist"
   },
   "dependencies": {
     "defu": "^6.1.4",
