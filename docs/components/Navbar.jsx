@@ -1,3 +1,9 @@
 export function Navbar () {
-  return <a href='/guides'>Guides</a>
+  return (
+    <header>
+      <nav>
+        <a href='/guides'>Guides</a>
+      </nav>
+    </header>
+  )
 }

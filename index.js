@@ -1,12 +1,12 @@
 import mdx from '@mdx-js/esbuild'
 import { defu } from 'defu'
 import esbuild from 'esbuild'
-import { createContext, CONSTANTS } from 'esbuild-multicontext'
+import { CONSTANTS, createContext } from 'esbuild-multicontext'
 import fs from 'node:fs'
 import path, { dirname, join } from 'node:path'
-import { Fragment, h } from 'preact'
-import Document from './document.js'
+import { h } from 'preact'
 import renderToString from 'preact-render-to-string'
+import Document from './document.js'
 
 import { marked } from 'marked'
 import { mkdir } from 'node:fs/promises'
@@ -15,9 +15,11 @@ import glob from 'tiny-glob'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-const html = String.raw
 const defaultOptions = {
   baseURL: '/',
+  userOptions: {
+    layoutComponent: Document
+  },
   dev: {
     enabled: false,
     port: 3000
@@ -31,7 +33,7 @@ const defaultOptions = {
  */
 export async function compile (options = {}) {
   const config = defu(options, defaultOptions)
-  const { root, template, outdir, baseURL, dev } = config
+  const { root, template, outdir, baseURL, dev, userOptions } = config
 
   const usableBaseURL = !baseURL.endsWith('/') ? join(baseURL, '/') : baseURL
 
@@ -137,16 +139,21 @@ export async function compile (options = {}) {
       const cachePath = path.join(outdir, '.cache')
       const finalFile = key.replace(cachePath, outdir).replace(/.js$/, '.html')
       const mod = await import(path.resolve(key)).then((d) => d.default)
-      const node = h(Document, {
-        scripts: [
-          h('script', {
-            type: 'module',
-            src: outputFile.replace(
-              path.normalize(outdir) + '/', usableBaseURL
-            )
-          })
-        ]
-      }, h(mod))
+      const node = h(
+        userOptions.layoutComponent,
+        {
+          scripts: [
+            h('script', {
+              type: 'module',
+              src: outputFile.replace(
+                path.normalize(outdir) + '/',
+                usableBaseURL
+              )
+            })
+          ]
+        },
+        h(mod)
+      )
       const str = renderToString(node)
       await mkdir(dirname(finalFile), { recursive: true })
       await fs.promises.writeFile(finalFile, str, 'utf8')
