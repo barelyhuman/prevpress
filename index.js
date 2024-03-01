@@ -5,6 +5,7 @@ import { createContext, CONSTANTS } from 'esbuild-multicontext'
 import fs from 'node:fs'
 import path, { dirname, join } from 'node:path'
 import { Fragment, h } from 'preact'
+import Document from './document.js'
 import renderToString from 'preact-render-to-string'
 
 import { marked } from 'marked'
@@ -22,23 +23,7 @@ const defaultOptions = {
     port: 3000
   },
   root: './content',
-  outdir: './dist',
-  template: html`
-    <!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title></title>
-      </head>
-      <body>
-        <div id="root">
-          <!--app-->
-        </div>
-        <!--scripts-->
-      </body>
-    </html>
-  `
+  outdir: './dist'
 }
 
 /**
@@ -152,16 +137,17 @@ export async function compile (options = {}) {
       const cachePath = path.join(outdir, '.cache')
       const finalFile = key.replace(cachePath, outdir).replace(/.js$/, '.html')
       const mod = await import(path.resolve(key)).then((d) => d.default)
-      const node = h(Fragment, {}, h(mod))
-      const str = template.replace('<!--app-->', renderToString(node)).replace(
-        '<!--scripts-->',
-        `
-      <script src="${outputFile.replace(
-        path.normalize(outdir) + '/',
-        usableBaseURL
-      )}" type="module"></script>
-    `
-      )
+      const node = h(Document, {
+        scripts: [
+          h('script', {
+            type: 'module',
+            src: outputFile.replace(
+              path.normalize(outdir) + '/', usableBaseURL
+            )
+          })
+        ]
+      }, h(mod))
+      const str = renderToString(node)
       await mkdir(dirname(finalFile), { recursive: true })
       await fs.promises.writeFile(finalFile, str, 'utf8')
       if (!dev.enabled) {
