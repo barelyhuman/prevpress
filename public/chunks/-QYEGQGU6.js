@@ -143,6 +143,9 @@ function Counter() {
     }
   );
 }
+function Navbar() {
+  return /* @__PURE__ */ u("a", { href: "/guides", children: "Guides" });
+}
 function _createMdxContent(props) {
   const _components = {
     h1: "h1",
@@ -153,7 +156,7 @@ function _createMdxContent(props) {
   return u(g, {
     children: [u(_components.h1, {
       children: "PrevPress"
-    }), "\n", u(_components.p, {
+    }), "\n", u(Navbar, {}), "\n", u(_components.p, {
       children: "TBD"
     }), "\n", u(_components.h2, {
       children: "Demo"
