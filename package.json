@@ -11,9 +11,9 @@
     "prevpress": "./cli.mjs"
   },
   "scripts": {
-    "test": "echo true",
+    "docs:build": "node ./cli.mjs build ./docs ./dist",
     "docs:dev": "node ./cli.mjs dev ./docs",
-    "docs:build": "node ./cli.mjs build ./docs ./dist"
+    "test": "playwright test"
   },
   "dependencies": {
     "defu": "^6.1.4",
@@ -26,6 +26,8 @@
   },
   "devDependencies": {
     "@mdx-js/esbuild": "^3.0.1",
+    "@playwright/test": "^1.42.0",
+    "@types/node": "^20.11.24",
     "esbuild": "^0.20.1",
     "standard": "^17.1.0"
   }
