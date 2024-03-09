@@ -2,6 +2,7 @@ import mdx from '@mdx-js/esbuild'
 import { defu } from 'defu'
 import esbuild from 'esbuild'
 import { CONSTANTS, createContext } from 'esbuild-multicontext'
+import { createContextWatcher } from 'esbuild-multicontext/watcher'
 import fs from 'node:fs'
 import path, { basename, dirname, join } from 'node:path'
 import { h } from 'preact'
@@ -96,6 +97,10 @@ export async function compile (options = {}) {
   }
 
   const baseContext = await esbuild.context(rootBuildOptions)
+
+  // patch a `build` method since `contextWatcher` expects it.
+  baseContext.build = baseContext.rebuild
+
   const output = await baseContext.rebuild()
 
   const markdownOutput = await Promise.all(
@@ -117,6 +122,26 @@ export async function compile (options = {}) {
   const outputEntryKeys = Object.keys(metaFile)
 
   const buildContext = createContext()
+
+  // Watch the context and decide if needs to rebuild itself on
+  // any additional files that we decide to watch and react too.
+  // in this case the mdx result that's generated
+  const baseContextWatcher = createContextWatcher(baseContext)
+
+  for (const file of mdxFiles) {
+    baseContextWatcher(file, {
+      root: process.cwd(),
+      onEvent (event) {
+        if (event.type !== 'change') {
+          return false
+        }
+        return true
+      },
+      onBuild () {
+        buildContext.build()
+      }
+    })
+  }
 
   buildContext.hook(CONSTANTS.BUILD_ERROR, (error) => {
     console.error('[prevpress]: Building Module failed with error:', error)
@@ -195,7 +220,7 @@ export async function compile (options = {}) {
       const node = h(
         userOptions.layoutComponent,
         {
-          sidebarItems: sidebarOrder.map(x => {
+          sidebarItems: sidebarOrder.map((x) => {
             const content = fs.readFileSync(x.filePath, 'utf8')
             const label = content.match(/[#]{1}\s((\w+\s?)+)\n?/)
             x.label = label?.length ? label[1] : basename(x.filePath)
