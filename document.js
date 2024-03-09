@@ -1,6 +1,15 @@
 import { Fragment, h } from 'preact'
 
-export default function Document ({ children, scripts, ...props }) {
+export default function Document ({
+  children,
+  sidebarItems = [],
+  scripts,
+  ...props
+}) {
+  const sidebarRendered = sidebarItems
+    .sort((x, y) => x.order - y.order)
+    .map((x) => h('li', {}, h('a', { href: x.slug }, x.label)))
+
   return h(
     'html',
     {
@@ -10,6 +19,7 @@ export default function Document ({ children, scripts, ...props }) {
     h(
       'body',
       {},
+      sidebarItems.length ? h('aside', {}, sidebarRendered) : null,
       h(
         'div',
         {

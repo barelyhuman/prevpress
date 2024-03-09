@@ -3,11 +3,10 @@ import { defu } from 'defu'
 import esbuild from 'esbuild'
 import { CONSTANTS, createContext } from 'esbuild-multicontext'
 import fs from 'node:fs'
-import path, { dirname, join } from 'node:path'
+import path, { basename, dirname, join } from 'node:path'
 import { h } from 'preact'
 import renderToString from 'preact-render-to-string'
 import Document from './document.js'
-
 import { marked } from 'marked'
 import { mkdir } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
@@ -47,6 +46,34 @@ export async function compile (options = {}) {
     absolute: true,
     filesOnly: true,
     cwd: root
+  })
+
+  const folderGroups = {}
+
+  mdxFiles.forEach((file) => {
+    const key = dirname(file)
+    if (!folderGroups[key]) {
+      folderGroups[key] = []
+    }
+    folderGroups[key].push(file)
+  })
+
+  mdfiles.forEach((file) => {
+    const key = dirname(file)
+    if (!folderGroups[key]) {
+      folderGroups[key] = []
+    }
+    folderGroups[key].push(file)
+  })
+
+  const dirOrderData = {}
+  Object.keys(folderGroups).map(async (dir) => {
+    const orderFilePath = path.join(dir, '_order.json')
+    const hasOrderFile = fs.existsSync(orderFilePath)
+    if (!hasOrderFile) return
+    const data = fs.readFileSync(orderFilePath, 'utf8')
+    const orderArray = JSON.parse(data)
+    dirOrderData[dir] = orderArray
   })
 
   const rootBuildOptions = {
@@ -131,17 +158,50 @@ export async function compile (options = {}) {
 
   outputEntryKeys.forEach((key) => {
     const _key = pathToKey(key)
+    const baseDirKey = dirname(key.replace(join(outdir, '.cache'), ''))
+    const sidebarOrder = (
+      dirOrderData[path.resolve(path.join(root, baseDirKey))] || []
+    ).map((d, ind) => {
+      const slug = path
+        .join(
+          '/',
+          baseDirKey,
+          d
+            .replace(/(.md)x?$/, '')
+            .trim()
+            .replace(/[-_ ]/g, '-') + '.html'
+        )
+        .replace(/\/$/, '')
+
+      const filePath = path.resolve(path.join(root, baseDirKey, d))
+
+      return {
+        order: ind,
+        slug,
+        filePath
+      }
+    })
+
     buildContext.hook(`${_key}:esm:error`, async (error) => {
       console.error(`Error building \`${key}\`:`, error)
     })
+
     buildContext.hook(`${_key}:esm:complete`, async (buildOutput) => {
       const outputFile = Object.keys(buildOutput.metafile.outputs)[0]
       const cachePath = path.join(outdir, '.cache')
       const finalFile = key.replace(cachePath, outdir).replace(/.js$/, '.html')
       const mod = await import(path.resolve(key)).then((d) => d.default)
+
       const node = h(
         userOptions.layoutComponent,
         {
+          sidebarItems: sidebarOrder.map(x => {
+            const content = fs.readFileSync(x.filePath, 'utf8')
+            const label = content.match(/[#]{1}\s((\w+\s?)+)\n?/)
+            x.label = label?.length ? label[1] : basename(x.filePath)
+            x.label = String(x.label).trim()
+            return x
+          }),
           scripts: [
             h('script', {
               type: 'module',
