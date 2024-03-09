@@ -10,6 +10,9 @@
   "bin": {
     "prevpress": "./cli.mjs"
   },
+  "exports": {
+    "./page": "./page.js"
+  },
   "scripts": {
     "docs:build": "node ./cli.mjs build ./docs ./dist",
     "docs:dev": "node ./cli.mjs dev ./docs",

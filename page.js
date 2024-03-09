@@ -1,6 +1,6 @@
 import { Fragment, h } from 'preact'
 
-export default function Document ({
+export default function Page ({
   children,
   sidebarItems = [],
   scripts,

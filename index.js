@@ -4,10 +4,10 @@ import esbuild from 'esbuild'
 import { CONSTANTS, createContext } from 'esbuild-multicontext'
 import { createContextWatcher } from 'esbuild-multicontext/watcher'
 import fs from 'node:fs'
-import path, { basename, dirname, join } from 'node:path'
+import path, { dirname, join } from 'node:path'
 import { h } from 'preact'
 import renderToString from 'preact-render-to-string'
-import Document from './document.js'
+
 import { marked } from 'marked'
 import { mkdir } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
@@ -17,9 +17,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const defaultOptions = {
   baseURL: '/',
-  userOptions: {
-    layoutComponent: Document
-  },
   dev: {
     enabled: false,
     port: 3000
@@ -33,7 +30,7 @@ const defaultOptions = {
  */
 export async function compile (options = {}) {
   const config = defu(options, defaultOptions)
-  const { root, template, outdir, baseURL, dev, userOptions } = config
+  const { root, template, outdir, baseURL, dev } = config
 
   const usableBaseURL = !baseURL.endsWith('/') ? join(baseURL, '/') : baseURL
 
@@ -78,12 +75,12 @@ export async function compile (options = {}) {
   })
 
   const rootBuildOptions = {
-    entryPoints: mdxFiles,
+    entryPoints: [...mdxFiles, path.resolve(root, 'app.jsx')],
     format: 'esm',
     bundle: true,
     outdir: path.join(outdir, '.cache'),
     metafile: true,
-    external: ['preact'],
+    external: ['preact', 'prevpress'],
     loader: {
       '.js': 'jsx'
     },
@@ -127,20 +124,24 @@ export async function compile (options = {}) {
   // any additional files that we decide to watch and react too.
   // in this case the mdx result that's generated
   const baseContextWatcher = createContextWatcher(baseContext)
+  const watcherHandler = {
+    root: process.cwd(),
+    onEvent (event) {
+      if (event.type !== 'change') {
+        return false
+      }
+      return true
+    },
+    onBuild () {
+      buildContext.build()
+    }
+  }
+
+  baseContextWatcher(path.join(root, 'app.js'), watcherHandler)
+  baseContextWatcher('**/*.css', watcherHandler)
 
   for (const file of mdxFiles) {
-    baseContextWatcher(file, {
-      root: process.cwd(),
-      onEvent (event) {
-        if (event.type !== 'change') {
-          return false
-        }
-        return true
-      },
-      onBuild () {
-        buildContext.build()
-      }
-    })
+    baseContextWatcher(file, watcherHandler)
   }
 
   buildContext.hook(CONSTANTS.BUILD_ERROR, (error) => {
@@ -151,8 +152,46 @@ export async function compile (options = {}) {
     console.error('[prevpress]: Watching modules failed with error:', error)
   })
 
+  let entryComponentPath
+
+  const mappedItems = new Map()
+
+  const pageOutputEntryKeys = outputEntryKeys
+    .map((d, i, source) => {
+      const match = source.findIndex((x) => d.replace('.js', '.css') === x)
+      if (match > -1) {
+        mappedItems.set(d, d.replace('.js', '.css'))
+      }
+      if (d.endsWith(path.join(outdir, '.cache', 'app.js'))) {
+        entryComponentPath = d
+      }
+      return d
+    })
+    .filter((x) => {
+      if (x.endsWith('.css')) return false
+      if (x.endsWith(path.join(outdir, '.cache', 'app.js'))) return false
+      return true
+    })
+
   for (const key of outputEntryKeys) {
     const _key = pathToKey(key)
+
+    if (key.endsWith('.css')) {
+      buildContext.add(`${_key}:esm`, {
+        entryPoints: [key],
+        bundle: true,
+        entryNames: '[name]',
+        assetNames: 'assets/[name]-[hash]',
+        chunkNames: 'chunks/[name]-[hash]',
+        outdir: path.join(outdir, 'public'),
+        loader: {
+          '.css': 'css'
+        }
+      })
+
+      continue
+    }
+
     buildContext.add(`${_key}:esm`, {
       entryPoints: [path.join(__dirname, 'runtime/client.js')],
       format: 'esm',
@@ -181,31 +220,8 @@ export async function compile (options = {}) {
     await fs.promises.writeFile(mdOutput.dest, str, 'utf8')
   }
 
-  outputEntryKeys.forEach((key) => {
+  pageOutputEntryKeys.forEach((key) => {
     const _key = pathToKey(key)
-    const baseDirKey = dirname(key.replace(join(outdir, '.cache'), ''))
-    const sidebarOrder = (
-      dirOrderData[path.resolve(path.join(root, baseDirKey))] || []
-    ).map((d, ind) => {
-      const slug = path
-        .join(
-          '/',
-          baseDirKey,
-          d
-            .replace(/(.md)x?$/, '')
-            .trim()
-            .replace(/[-_ ]/g, '-') + '.html'
-        )
-        .replace(/\/$/, '')
-
-      const filePath = path.resolve(path.join(root, baseDirKey, d))
-
-      return {
-        order: ind,
-        slug,
-        filePath
-      }
-    })
 
     buildContext.hook(`${_key}:esm:error`, async (error) => {
       console.error(`Error building \`${key}\`:`, error)
@@ -215,33 +231,50 @@ export async function compile (options = {}) {
       const outputFile = Object.keys(buildOutput.metafile.outputs)[0]
       const cachePath = path.join(outdir, '.cache')
       const finalFile = key.replace(cachePath, outdir).replace(/.js$/, '.html')
+      const App = await import(path.resolve(entryComponentPath)).then(
+        (d) => d.default
+      )
       const mod = await import(path.resolve(key)).then((d) => d.default)
 
+      const links = []
+      const cssForKey = mappedItems.get(key)
+
+      if (cssForKey) {
+        links.push(
+          h('link', {
+            rel: 'stylesheet',
+            href: path.join(
+              cssForKey.replace(path.join(outdir, '.cache'), '/public/')
+            )
+          })
+        )
+      }
+
       const node = h(
-        userOptions.layoutComponent,
+        App,
         {
-          sidebarItems: sidebarOrder.map((x) => {
-            const content = fs.readFileSync(x.filePath, 'utf8')
-            const label = content.match(/[#]{1}\s((\w+\s?)+)\n?/)
-            x.label = label?.length ? label[1] : basename(x.filePath)
-            x.label = String(x.label).trim()
-            return x
-          }),
-          scripts: [
-            h('script', {
-              type: 'module',
-              src: outputFile.replace(
-                path.normalize(outdir) + '/',
-                usableBaseURL
-              )
-            })
-          ]
+          headProps: {
+            children: links
+          },
+          pageProps: {
+            scripts: [
+              h('script', {
+                type: 'module',
+                src: outputFile.replace(
+                  path.normalize(outdir) + '/',
+                  usableBaseURL
+                )
+              })
+            ]
+          }
         },
         h(mod)
       )
+
       const str = renderToString(node)
       await mkdir(dirname(finalFile), { recursive: true })
       await fs.promises.writeFile(finalFile, str, 'utf8')
+
       if (!dev.enabled) {
         await fs.promises.rm(path.join(outdir, '.cache'), {
           force: true,

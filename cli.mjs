@@ -14,7 +14,7 @@ const version = (() =>
 prog
   .version(version)
   .option('--help, -h', 'An example global flag')
-  .option('--config,-c', 'Config to use', './.configs./prevpress.config.js')
+  .option('--config,-c', 'Config to use', 'prevpress.config.js')
 
 prog
   .command('dev [content]')
