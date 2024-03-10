@@ -9,7 +9,7 @@ function _createMdxContent(props) {
     ...props.components
   };
   return u(_components.h1, {
-    children: "Styling my day"
+    children: "Styling everything"
   });
 }
 function MDXContent(props = {}) {
