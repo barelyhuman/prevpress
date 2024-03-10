@@ -46,19 +46,25 @@ prog
   .option('--base-url', 'Base URL to use for assets', '/')
   .example('build ./content ./dist')
   .action(async (content, dest, opts) => {
-    const contentSource = content || './content'
-    const destSource = dest || './dist'
+    try {
+      const contentSource = content || './content'
+      const destSource = dest || './dist'
 
-    const userConfig = await readConfig(opts.config)
+      const userConfig = await readConfig(opts.config)
 
-    console.log(`> building from ${contentSource} to ${destSource}`)
-    await compile({
-      root: contentSource,
-      outdir: destSource,
-      userOptions: userConfig,
-      baseURL: opts['base-url']
-    })
-    console.log('Done!')
+      console.log(`> building from ${contentSource} to ${destSource}`)
+      await compile({
+        root: contentSource,
+        outdir: destSource,
+        userOptions: userConfig,
+        baseURL: opts['base-url']
+      })
+      console.log('Done!')
+      process.exit(0)
+    } catch (err) {
+      console.error(err)
+      process.exit(1)
+    }
   })
 
 prog.parse(process.argv)
