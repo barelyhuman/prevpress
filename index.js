@@ -1,10 +1,11 @@
 import mdx from '@mdx-js/esbuild'
 import { defu } from 'defu'
 import esbuild from 'esbuild'
-import { createContext, CONSTANTS } from 'esbuild-multicontext'
+import { CONSTANTS, createContext } from 'esbuild-multicontext'
+import { createContextWatcher } from 'esbuild-multicontext/watcher'
 import fs from 'node:fs'
 import path, { dirname, join } from 'node:path'
-import { Fragment, h } from 'preact'
+import { h, render } from 'preact'
 import renderToString from 'preact-render-to-string'
 
 import { marked } from 'marked'
@@ -14,7 +15,6 @@ import glob from 'tiny-glob'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-const html = String.raw
 const defaultOptions = {
   baseURL: '/',
   dev: {
@@ -22,23 +22,7 @@ const defaultOptions = {
     port: 3000
   },
   root: './content',
-  outdir: './dist',
-  template: html`
-    <!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title></title>
-      </head>
-      <body>
-        <div id="root">
-          <!--app-->
-        </div>
-        <!--scripts-->
-      </body>
-    </html>
-  `
+  outdir: './dist'
 }
 
 /**
@@ -62,8 +46,36 @@ export async function compile (options = {}) {
     cwd: root
   })
 
+  const folderGroups = {}
+
+  mdxFiles.forEach((file) => {
+    const key = dirname(file)
+    if (!folderGroups[key]) {
+      folderGroups[key] = []
+    }
+    folderGroups[key].push(file)
+  })
+
+  mdfiles.forEach((file) => {
+    const key = dirname(file)
+    if (!folderGroups[key]) {
+      folderGroups[key] = []
+    }
+    folderGroups[key].push(file)
+  })
+
+  const dirOrderData = {}
+  Object.keys(folderGroups).map(async (dir) => {
+    const orderFilePath = path.join(dir, '_order.json')
+    const hasOrderFile = fs.existsSync(orderFilePath)
+    if (!hasOrderFile) return
+    const data = fs.readFileSync(orderFilePath, 'utf8')
+    const orderArray = JSON.parse(data)
+    dirOrderData[dir] = orderArray
+  })
+
   const rootBuildOptions = {
-    entryPoints: mdxFiles,
+    entryPoints: [...mdxFiles, path.resolve(root, 'app.jsx')],
     format: 'esm',
     bundle: true,
     outdir: path.join(outdir, '.cache'),
@@ -71,6 +83,9 @@ export async function compile (options = {}) {
     external: ['preact'],
     loader: {
       '.js': 'jsx'
+    },
+    define: {
+      __PPRESS_BASE_URL: JSON.stringify(usableBaseURL)
     },
     jsx: 'automatic',
     jsxImportSource: 'preact',
@@ -82,6 +97,10 @@ export async function compile (options = {}) {
   }
 
   const baseContext = await esbuild.context(rootBuildOptions)
+
+  // patch a `build` method since `contextWatcher` expects it.
+  baseContext.build = baseContext.rebuild
+
   const output = await baseContext.rebuild()
 
   const markdownOutput = await Promise.all(
@@ -104,6 +123,30 @@ export async function compile (options = {}) {
 
   const buildContext = createContext()
 
+  // Watch the context and decide if needs to rebuild itself on
+  // any additional files that we decide to watch and react too.
+  // in this case the mdx result that's generated
+  const baseContextWatcher = createContextWatcher(baseContext)
+  const watcherHandler = {
+    root: process.cwd(),
+    onEvent (event) {
+      if (event.type !== 'change') {
+        return false
+      }
+      return true
+    },
+    onBuild () {
+      buildContext.build()
+    }
+  }
+
+  baseContextWatcher(path.join(root, 'app.js'), watcherHandler)
+  baseContextWatcher('**/*.css', watcherHandler)
+
+  for (const file of mdxFiles) {
+    baseContextWatcher(file, watcherHandler)
+  }
+
   buildContext.hook(CONSTANTS.BUILD_ERROR, (error) => {
     console.error('[prevpress]: Building Module failed with error:', error)
   })
@@ -112,8 +155,46 @@ export async function compile (options = {}) {
     console.error('[prevpress]: Watching modules failed with error:', error)
   })
 
+  let entryComponentPath
+
+  const mappedItems = new Map()
+
+  const pageOutputEntryKeys = outputEntryKeys
+    .map((d, i, source) => {
+      const match = source.findIndex((x) => d.replace('.js', '.css') === x)
+      if (match > -1) {
+        mappedItems.set(d, d.replace('.js', '.css'))
+      }
+      if (d.endsWith(path.join(outdir, '.cache', 'app.js'))) {
+        entryComponentPath = d
+      }
+      return d
+    })
+    .filter((x) => {
+      if (x.endsWith('.css')) return false
+      if (x.endsWith(path.join(outdir, '.cache', 'app.js'))) return false
+      return true
+    })
+
   for (const key of outputEntryKeys) {
     const _key = pathToKey(key)
+
+    if (key.endsWith('.css')) {
+      buildContext.add(`${_key}:esm`, {
+        entryPoints: [key],
+        bundle: true,
+        entryNames: '[name]',
+        assetNames: 'assets/[name]-[hash]',
+        chunkNames: 'chunks/[name]-[hash]',
+        outdir: path.join(outdir, 'public'),
+        loader: {
+          '.css': 'css'
+        }
+      })
+
+      continue
+    }
+
     buildContext.add(`${_key}:esm`, {
       entryPoints: [path.join(__dirname, 'runtime/client.js')],
       format: 'esm',
@@ -125,6 +206,7 @@ export async function compile (options = {}) {
       metafile: true,
       splitting: true,
       define: {
+        __PPRESS_BASE_URL: JSON.stringify(usableBaseURL),
         __PPRESS_RENDERED_PAGE: JSON.stringify(path.resolve(key))
       },
       loader: {
@@ -142,28 +224,63 @@ export async function compile (options = {}) {
     await fs.promises.writeFile(mdOutput.dest, str, 'utf8')
   }
 
-  outputEntryKeys.forEach((key) => {
+  pageOutputEntryKeys.forEach((key) => {
     const _key = pathToKey(key)
+
     buildContext.hook(`${_key}:esm:error`, async (error) => {
       console.error(`Error building \`${key}\`:`, error)
     })
+
     buildContext.hook(`${_key}:esm:complete`, async (buildOutput) => {
       const outputFile = Object.keys(buildOutput.metafile.outputs)[0]
       const cachePath = path.join(outdir, '.cache')
       const finalFile = key.replace(cachePath, outdir).replace(/.js$/, '.html')
-      const mod = await import(path.resolve(key)).then((d) => d.default)
-      const node = h(Fragment, {}, h(mod))
-      const str = template.replace('<!--app-->', renderToString(node)).replace(
-        '<!--scripts-->',
-        `
-      <script src="${outputFile.replace(
-        path.normalize(outdir) + '/',
-        usableBaseURL
-      )}" type="module"></script>
-    `
+      const App = await import(path.resolve(entryComponentPath)).then(
+        (d) => d.default
       )
+      const mod = await import(path.resolve(key)).then((d) => d.default)
+
+      const links = []
+      const cssForKey = mappedItems.get(key)
+
+      if (cssForKey) {
+        links.push(
+          h('link', {
+            rel: 'stylesheet',
+            href: path.join(
+              cssForKey.replace(path.join(outdir, '.cache'), `${usableBaseURL}/public/`)
+            )
+          })
+        )
+      }
+
+      const node = h(
+        App,
+        {
+          headProps: {
+            children: links
+          },
+          pageProps: {
+            children: [
+              h(mod)
+            ],
+            scripts: [
+              h('script', {
+                type: 'module',
+                src: outputFile.replace(
+                  path.normalize(outdir) + '/',
+                  usableBaseURL
+                )
+              })
+            ]
+          }
+        }
+      )
+
+      const str = renderToString(node)
       await mkdir(dirname(finalFile), { recursive: true })
       await fs.promises.writeFile(finalFile, str, 'utf8')
+
       if (!dev.enabled) {
         await fs.promises.rm(path.join(outdir, '.cache'), {
           force: true,

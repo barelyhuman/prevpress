@@ -6,3 +6,7 @@ node_modules
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# yalc
+.yalc
+yalc.lock
