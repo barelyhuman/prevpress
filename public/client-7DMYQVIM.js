@@ -5,7 +5,7 @@ import {
 
 // runtime/client.js
 var modDef = (mod) => "default" in mod ? mod.default : mod;
-var Component = modDef(await import("./chunks/-E4JKVUNO.js"));
+var Component = modDef(await import("./chunks/-A73CKEYG.js"));
 E(
   /* @__PURE__ */ u(Component, {}),
   document.getElementById("root")
