@@ -5,7 +5,7 @@ import { CONSTANTS, createContext } from 'esbuild-multicontext'
 import { createContextWatcher } from 'esbuild-multicontext/watcher'
 import fs from 'node:fs'
 import path, { dirname, join } from 'node:path'
-import { h } from 'preact'
+import { h, render } from 'preact'
 import renderToString from 'preact-render-to-string'
 
 import { marked } from 'marked'
@@ -80,9 +80,12 @@ export async function compile (options = {}) {
     bundle: true,
     outdir: path.join(outdir, '.cache'),
     metafile: true,
-    external: ['preact', 'prevpress'],
+    external: ['preact'],
     loader: {
       '.js': 'jsx'
+    },
+    define: {
+      __PPRESS_BASE_URL: JSON.stringify(usableBaseURL)
     },
     jsx: 'automatic',
     jsxImportSource: 'preact',
@@ -203,6 +206,7 @@ export async function compile (options = {}) {
       metafile: true,
       splitting: true,
       define: {
+        __PPRESS_BASE_URL: JSON.stringify(usableBaseURL),
         __PPRESS_RENDERED_PAGE: JSON.stringify(path.resolve(key))
       },
       loader: {
@@ -244,7 +248,7 @@ export async function compile (options = {}) {
           h('link', {
             rel: 'stylesheet',
             href: path.join(
-              cssForKey.replace(path.join(outdir, '.cache'), '/public/')
+              cssForKey.replace(path.join(outdir, '.cache'), `${usableBaseURL}/public/`)
             )
           })
         )
@@ -257,6 +261,9 @@ export async function compile (options = {}) {
             children: links
           },
           pageProps: {
+            children: [
+              h(mod)
+            ],
             scripts: [
               h('script', {
                 type: 'module',
@@ -267,8 +274,7 @@ export async function compile (options = {}) {
               })
             ]
           }
-        },
-        h(mod)
+        }
       )
 
       const str = renderToString(node)

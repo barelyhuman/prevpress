@@ -11,7 +11,8 @@
     "prevpress": "./cli.mjs"
   },
   "exports": {
-    "./page": "./page.js"
+    "./page": "./page.js",
+    "./router": "./router.js"
   },
   "scripts": {
     "docs:build": "node ./cli.mjs build ./docs ./dist",
