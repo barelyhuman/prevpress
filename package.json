@@ -22,6 +22,7 @@
   "dependencies": {
     "defu": "^6.1.4",
     "esbuild-multicontext": "^0.11.0",
+    "kleur": "^4.1.5",
     "marked": "^12.0.0",
     "preact": ">=10",
     "preact-render-to-string": "^6.4.0",

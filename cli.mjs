@@ -5,6 +5,11 @@ import { compile } from './index.js'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { existsSync, readFileSync } from 'node:fs'
+import kleur from 'kleur'
+
+const FILE = kleur.bold().underline().white
+const SUCCESS = kleur.bold().green
+const INFO = kleur.cyan
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const prog = sade('prevpress')
@@ -27,7 +32,7 @@ prog
 
     const userConfig = await readConfig(opts.config)
 
-    console.log(`> Serving ${contentSource}`)
+    console.log(INFO(`${kleur.gray('>')} Serving ${FILE(contentSource)}`))
     await compile({
       root: contentSource,
       outdir: destSource,
@@ -52,14 +57,15 @@ prog
 
       const userConfig = await readConfig(opts.config)
 
-      console.log(`> building from ${contentSource} to ${destSource}`)
+      const msg = INFO(`building from ${FILE(contentSource)} to ${FILE(destSource)}`)
+      console.log(`${kleur.gray('[prevpress]')} ${msg}`)
       await compile({
         root: contentSource,
         outdir: destSource,
         userOptions: userConfig,
         baseURL: opts['base-url']
       })
-      console.log('Done!')
+      console.log(`\n${SUCCESS('Done!')}`)
       process.exit(0)
     } catch (err) {
       console.error(err)

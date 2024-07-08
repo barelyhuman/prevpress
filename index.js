@@ -106,9 +106,19 @@ export async function compile (options = {}) {
   const markdownOutput = await Promise.all(
     mdfiles.map(async (x) => {
       const content = await fs.promises.readFile(x, 'utf8')
-      const destPath = x
+      const fileName = path.basename(x).replace(path.extname(x), '')
+      let destPath = x
         .replace(path.normalize(root), path.join(outdir))
         .replace('.md', '.html')
+      if (fileName !== 'index') {
+        const basicSplit = x.split(path.sep)
+        const pushAtIndex = basicSplit.length - 1
+        destPath = [
+          ...basicSplit.slice(0, pushAtIndex),
+          fileName,
+          'index.html'
+        ].join(path.sep)
+      }
       return {
         source: x,
         dest: destPath,
@@ -234,7 +244,20 @@ export async function compile (options = {}) {
     buildContext.hook(`${_key}:esm:complete`, async (buildOutput) => {
       const outputFile = Object.keys(buildOutput.metafile.outputs)[0]
       const cachePath = path.join(outdir, '.cache')
-      const finalFile = key.replace(cachePath, outdir).replace(/.js$/, '.html')
+
+      const fileName = path.basename(key).replace(path.extname(key), '')
+      let finalFile = key.replace(cachePath, outdir).replace(/.js$/, '.html')
+
+      if (fileName !== 'index') {
+        const basicSplit = finalFile.split(path.sep)
+        const pushAtIndex = basicSplit.length - 1
+        finalFile = [
+          ...basicSplit.slice(0, pushAtIndex),
+          fileName,
+          'index.html'
+        ].join(path.sep)
+      }
+
       const App = await import(path.resolve(entryComponentPath)).then(
         (d) => d.default
       )
@@ -248,34 +271,32 @@ export async function compile (options = {}) {
           h('link', {
             rel: 'stylesheet',
             href: path.join(
-              cssForKey.replace(path.join(outdir, '.cache'), `${usableBaseURL}/public/`)
+              cssForKey.replace(
+                path.join(outdir, '.cache'),
+                `${usableBaseURL}/public/`
+              )
             )
           })
         )
       }
 
-      const node = h(
-        App,
-        {
-          headProps: {
-            children: links
-          },
-          pageProps: {
-            children: [
-              h(mod)
-            ],
-            scripts: [
-              h('script', {
-                type: 'module',
-                src: outputFile.replace(
-                  path.normalize(outdir) + '/',
-                  usableBaseURL
-                )
-              })
-            ]
-          }
+      const node = h(App, {
+        headProps: {
+          children: links
+        },
+        pageProps: {
+          children: [h(mod)],
+          scripts: [
+            h('script', {
+              type: 'module',
+              src: outputFile.replace(
+                path.normalize(outdir) + '/',
+                usableBaseURL
+              )
+            })
+          ]
         }
-      )
+      })
 
       const str = renderToString(node)
       await mkdir(dirname(finalFile), { recursive: true })
