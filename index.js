@@ -4,8 +4,8 @@ import esbuild from 'esbuild'
 import { CONSTANTS, createContext } from 'esbuild-multicontext'
 import { createContextWatcher } from 'esbuild-multicontext/watcher'
 import fs from 'node:fs'
-import path, { dirname, join } from 'node:path'
-import { h, render } from 'preact'
+import path, { dirname, join, resolve } from 'node:path'
+import { h } from 'preact'
 import renderToString from 'preact-render-to-string'
 
 import { marked } from 'marked'
@@ -190,18 +190,6 @@ export async function compile (options = {}) {
     const _key = pathToKey(key)
 
     if (key.endsWith('.css')) {
-      buildContext.add(`${_key}:esm`, {
-        entryPoints: [key],
-        bundle: true,
-        entryNames: '[name]',
-        assetNames: 'assets/[name]-[hash]',
-        chunkNames: 'chunks/[name]-[hash]',
-        outdir: path.join(outdir, 'public'),
-        loader: {
-          '.css': 'css'
-        }
-      })
-
       continue
     }
 
@@ -220,7 +208,8 @@ export async function compile (options = {}) {
         __PPRESS_RENDERED_PAGE: JSON.stringify(path.resolve(key))
       },
       loader: {
-        '.js': 'jsx'
+        '.js': 'jsx',
+        '.css': 'local-css'
       },
       jsx: 'automatic',
       jsxImportSource: 'preact'
@@ -299,6 +288,18 @@ export async function compile (options = {}) {
       })
 
       const str = renderToString(node)
+
+      if (cssForKey) {
+        const cssOutpath = path.join(
+          cssForKey.replace(
+            path.join(outdir, '.cache'),
+            path.join(outdir, 'public')
+          )
+        )
+        await mkdir(dirname(resolve(cssOutpath)), { recursive: true })
+        await fs.promises.copyFile(resolve(cssForKey), resolve(cssOutpath))
+      }
+
       await mkdir(dirname(finalFile), { recursive: true })
       await fs.promises.writeFile(finalFile, str, 'utf8')
 
