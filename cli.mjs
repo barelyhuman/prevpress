@@ -29,8 +29,8 @@ prog
       baseURL: opts['base-url'],
       dev: {
         enabled: true,
-        port: +opts.port || 3000
-      }
+        port: +opts.port || 3000,
+      },
     })
   })
 
@@ -47,7 +47,7 @@ prog
     await compile({
       root: contentSource,
       outdir: destSource,
-      baseURL: opts['base-url']
+      baseURL: opts['base-url'],
     })
     console.log('Done!')
   })

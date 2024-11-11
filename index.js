@@ -3,7 +3,7 @@ import { defu } from 'defu'
 import esbuild from 'esbuild'
 import { createContext, CONSTANTS } from 'esbuild-multicontext'
 import fs from 'node:fs'
-import path, { dirname, join } from 'node:path'
+import path, { dirname, join, resolve } from 'node:path'
 import { Fragment, h } from 'preact'
 import renderToString from 'preact-render-to-string'
 
@@ -19,12 +19,12 @@ const defaultOptions = {
   baseURL: '/',
   dev: {
     enabled: false,
-    port: 3000
+    port: 3000,
   },
   root: './content',
   outdir: './dist',
   template: html`
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en">
       <head>
         <meta charset="UTF-8" />
@@ -38,13 +38,13 @@ const defaultOptions = {
         <!--scripts-->
       </body>
     </html>
-  `
+  `,
 }
 
 /**
  * @param {typeof defaultOptions} options
  */
-export async function compile (options = {}) {
+export async function compile(options = {}) {
   const config = defu(options, defaultOptions)
   const { root, template, outdir, baseURL, dev } = config
 
@@ -53,13 +53,13 @@ export async function compile (options = {}) {
   const mdxFiles = await glob('./**/*.mdx', {
     absolute: true,
     filesOnly: true,
-    cwd: root
+    cwd: root,
   })
 
   const mdfiles = await glob('./**/*.md', {
     absolute: true,
     filesOnly: true,
-    cwd: root
+    cwd: root,
   })
 
   const rootBuildOptions = {
@@ -70,22 +70,22 @@ export async function compile (options = {}) {
     metafile: true,
     external: ['preact'],
     loader: {
-      '.js': 'jsx'
+      '.js': 'jsx',
     },
     jsx: 'automatic',
     jsxImportSource: 'preact',
     plugins: [
       mdx({
-        jsxImportSource: 'preact'
-      })
-    ]
+        jsxImportSource: 'preact',
+      }),
+    ],
   }
 
   const baseContext = await esbuild.context(rootBuildOptions)
   const output = await baseContext.rebuild()
 
   const markdownOutput = await Promise.all(
-    mdfiles.map(async (x) => {
+    mdfiles.map(async x => {
       const content = await fs.promises.readFile(x, 'utf8')
       const destPath = x
         .replace(path.normalize(root), path.join(outdir))
@@ -94,7 +94,7 @@ export async function compile (options = {}) {
         source: x,
         dest: destPath,
         raw: content,
-        html: marked(content)
+        html: marked(content),
       }
     })
   )
@@ -104,12 +104,76 @@ export async function compile (options = {}) {
 
   const buildContext = createContext()
 
-  buildContext.hook(CONSTANTS.BUILD_ERROR, (error) => {
+  buildContext.hook(CONSTANTS.BUILD_ERROR, error => {
     console.error('[prevpress]: Building Module failed with error:', error)
   })
 
-  buildContext.hook(CONSTANTS.WATCH_ERROR, (error) => {
+  buildContext.hook(CONSTANTS.WATCH_ERROR, error => {
     console.error('[prevpress]: Watching modules failed with error:', error)
+  })
+
+  const vendorLibs = [
+    'preact',
+    'preact/compat',
+    'preact/debug',
+    'preact/devtools',
+    'preact/hooks',
+    'preact/test-utils',
+    'preact/jsx-runtime',
+    'preact/jsx-dev-runtime',
+    'preact/compat/client',
+    'preact/compat/server',
+    'preact/compat/jsx-runtime',
+    'preact/compat/jsx-dev-runtime',
+    'preact/compat/scheduler',
+  ]
+  const vendorFilterRegex = `(${vendorLibs
+    .map(d => d.replace('/', '\\/'))
+    .join('|')})`
+  let vendorResolutions
+  const vendorChunk = await esbuild.build({
+    entryPoints: vendorLibs,
+    format: 'esm',
+    outdir: path.join(process.cwd(), '.prevpress/vendor'),
+    entryNames: '[dir]/[name]',
+    chunkNames: '[hash]',
+    splitting: true,
+    bundle: true,
+    metafile: true,
+    plugins: [
+      {
+        name: 'vendor-chunk-name-paths',
+        setup(builder) {
+          builder.onLoad(
+            {
+              filter: new RegExp(vendorFilterRegex),
+            },
+            async ctx => {
+              if (vendorResolutions) return
+              vendorResolutions =
+                vendorResolutions ??
+                Object.fromEntries(
+                  await Promise.all(
+                    vendorLibs.map(async d => {
+                      const result = await builder.resolve(d, {
+                        kind: 'entry-point',
+                        resolveDir: 'node_modules',
+                      })
+                      return [
+                        d,
+                        {
+                          original: result.path,
+                          dist: path.join(outdir, 'vendor'),
+                        },
+                      ]
+                    })
+                  )
+                )
+            }
+          )
+        },
+      },
+    ],
   })
 
   for (const key of outputEntryKeys) {
@@ -125,13 +189,30 @@ export async function compile (options = {}) {
       metafile: true,
       splitting: true,
       define: {
-        __PPRESS_RENDERED_PAGE: JSON.stringify(path.resolve(key))
+        __PPRESS_RENDERED_PAGE: JSON.stringify(path.resolve(key)),
       },
       loader: {
-        '.js': 'jsx'
+        '.js': 'jsx',
       },
+      alias: Object.fromEntries(
+        vendorLibs
+          .map(d => {
+            return [
+              d,
+              findInObj(
+                vendorChunk.metafile.outputs,
+                vendorResolutions[d].original
+                  .replace(process.cwd(), '')
+                  .slice(1),
+                d => d.entryPoint
+              ),
+            ]
+          })
+          .filter(d => d[1])
+          .map(d => [d[0], resolve('.', d[1])])
+      ),
       jsx: 'automatic',
-      jsxImportSource: 'preact'
+      jsxImportSource: 'preact',
     })
   }
 
@@ -142,16 +223,16 @@ export async function compile (options = {}) {
     await fs.promises.writeFile(mdOutput.dest, str, 'utf8')
   }
 
-  outputEntryKeys.forEach((key) => {
+  outputEntryKeys.forEach(key => {
     const _key = pathToKey(key)
-    buildContext.hook(`${_key}:esm:error`, async (error) => {
+    buildContext.hook(`${_key}:esm:error`, async error => {
       console.error(`Error building \`${key}\`:`, error)
     })
-    buildContext.hook(`${_key}:esm:complete`, async (buildOutput) => {
+    buildContext.hook(`${_key}:esm:complete`, async buildOutput => {
       const outputFile = Object.keys(buildOutput.metafile.outputs)[0]
       const cachePath = path.join(outdir, '.cache')
       const finalFile = key.replace(cachePath, outdir).replace(/.js$/, '.html')
-      const mod = await import(path.resolve(key)).then((d) => d.default)
+      const mod = await import(path.resolve(key)).then(d => d.default)
       const node = h(Fragment, {}, h(mod))
       const str = template.replace('<!--app-->', renderToString(node)).replace(
         '<!--scripts-->',
@@ -167,7 +248,7 @@ export async function compile (options = {}) {
       if (!dev.enabled) {
         await fs.promises.rm(path.join(outdir, '.cache'), {
           force: true,
-          recursive: true
+          recursive: true,
         })
       }
     })
@@ -180,7 +261,7 @@ export async function compile (options = {}) {
     await baseContext.watch()
     await baseContext.serve({
       servedir: outdir,
-      port: dev.port
+      port: dev.port,
     })
     console.log(`Serving assets on port: ${dev.port}`)
   } else {
@@ -189,6 +270,12 @@ export async function compile (options = {}) {
   }
 }
 
-function pathToKey (toConvert) {
+function pathToKey(toConvert) {
   return toConvert.replace('/', '__')
+}
+
+function findInObj(obj, value, extract = d => d) {
+  return Object.keys(obj).find(k => {
+    return extract(obj[k]) === value
+  })
 }
