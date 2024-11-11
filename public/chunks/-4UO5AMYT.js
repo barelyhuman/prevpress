@@ -2,9 +2,9 @@ import {
   g,
   l,
   u
-} from "./chunk-OXUWU6FG.js";
+} from "./chunk-ZQXBMIZ5.js";
 
-// node_modules/preact/hooks/dist/hooks.module.js
+// .prevpress/vendor/DC7NJEFQ.js
 var t;
 var r;
 var u2;
@@ -21,30 +21,30 @@ var s = e.unmount;
 var d = e.__;
 function h(n, t2) {
   e.__h && e.__h(r, n, o || t2), o = 0;
-  var u3 = r.__H || (r.__H = { __: [], __h: [] });
-  return n >= u3.__.length && u3.__.push({ __V: c }), u3.__[n];
+  var u22 = r.__H || (r.__H = { __: [], __h: [] });
+  return n >= u22.__.length && u22.__.push({ __V: c }), u22.__[n];
 }
 function p(n) {
   return o = 1, y(D, n);
 }
-function y(n, u3, i2) {
+function y(n, u22, i2) {
   var o2 = h(t++, 2);
-  if (o2.t = n, !o2.__c && (o2.__ = [i2 ? i2(u3) : D(void 0, u3), function(n2) {
+  if (o2.t = n, !o2.__c && (o2.__ = [i2 ? i2(u22) : D(void 0, u22), function(n2) {
     var t2 = o2.__N ? o2.__N[0] : o2.__[0], r2 = o2.t(t2, n2);
     t2 !== r2 && (o2.__N = [r2, o2.__[1]], o2.__c.setState({}));
   }], o2.__c = r, !r.u)) {
     var f2 = function(n2, t2, r2) {
       if (!o2.__c.__H)
         return true;
-      var u4 = o2.__c.__H.__.filter(function(n3) {
+      var u3 = o2.__c.__H.__.filter(function(n3) {
         return !!n3.__c;
       });
-      if (u4.every(function(n3) {
+      if (u3.every(function(n3) {
         return !n3.__N;
       }))
         return !c2 || c2.call(this, n2, t2, r2);
       var i3 = false;
-      return u4.forEach(function(n3) {
+      return u3.forEach(function(n3) {
         if (n3.__N) {
           var t3 = n3.__[0];
           n3.__ = n3.__N, n3.__N = void 0, t3 !== n3.__[0] && (i3 = true);
@@ -55,8 +55,8 @@ function y(n, u3, i2) {
     var c2 = r.shouldComponentUpdate, e2 = r.componentWillUpdate;
     r.componentWillUpdate = function(n2, t2, r2) {
       if (this.__e) {
-        var u4 = c2;
-        c2 = void 0, f2(n2, t2, r2), c2 = u4;
+        var u3 = c2;
+        c2 = void 0, f2(n2, t2, r2), c2 = u3;
       }
       e2 && e2.call(this, n2, t2, r2);
     }, r.shouldComponentUpdate = f2;
@@ -114,13 +114,13 @@ e.__b = function(n) {
 var k = "function" == typeof requestAnimationFrame;
 function w(n) {
   var t2, r2 = function() {
-    clearTimeout(u3), k && cancelAnimationFrame(t2), setTimeout(n);
-  }, u3 = setTimeout(r2, 100);
+    clearTimeout(u22), k && cancelAnimationFrame(t2), setTimeout(n);
+  }, u22 = setTimeout(r2, 100);
   k && (t2 = requestAnimationFrame(r2));
 }
 function z(n) {
-  var t2 = r, u3 = n.__c;
-  "function" == typeof u3 && (n.__c = void 0, u3()), r = t2;
+  var t2 = r, u22 = n.__c;
+  "function" == typeof u22 && (n.__c = void 0, u22()), r = t2;
 }
 function B(n) {
   var t2 = r;
@@ -131,15 +131,11 @@ function D(n, t2) {
 }
 
 // dist/.cache/index.js
-var counter_default = {
-  buttonStyle: "counter_buttonStyle"
-};
 function Counter() {
   const [count, setCount] = p(0);
   return /* @__PURE__ */ u(
     "button",
     {
-      class: counter_default.buttonStyle,
       onClick: () => {
         setCount(count + 1);
       },
