@@ -165,6 +165,70 @@ export async function compile (options = {}) {
     console.error('[prevpress]: Watching modules failed with error:', error)
   })
 
+  const vendorLibs = [
+    'preact',
+    'preact/compat',
+    'preact/debug',
+    'preact/devtools',
+    'preact/hooks',
+    'preact/test-utils',
+    'preact/jsx-runtime',
+    'preact/jsx-dev-runtime',
+    'preact/compat/client',
+    'preact/compat/server',
+    'preact/compat/jsx-runtime',
+    'preact/compat/jsx-dev-runtime',
+    'preact/compat/scheduler'
+  ]
+  const vendorFilterRegex = `(${vendorLibs
+    .map((d) => d.replace('/', '\\/'))
+    .join('|')})`
+  let vendorResolutions
+  const vendorChunk = await esbuild.build({
+    entryPoints: vendorLibs,
+    format: 'esm',
+    outdir: path.join(process.cwd(), '.prevpress/vendor'),
+    entryNames: '[dir]/[name]',
+    chunkNames: '[hash]',
+    splitting: true,
+    bundle: true,
+    metafile: true,
+    plugins: [
+      {
+        name: 'vendor-chunk-name-paths',
+        setup (builder) {
+          builder.onLoad(
+            {
+              filter: new RegExp(vendorFilterRegex)
+            },
+            async (ctx) => {
+              if (vendorResolutions) return
+              vendorResolutions =
+                vendorResolutions ??
+                Object.fromEntries(
+                  await Promise.all(
+                    vendorLibs.map(async (d) => {
+                      const result = await builder.resolve(d, {
+                        kind: 'entry-point',
+                        resolveDir: 'node_modules'
+                      })
+                      return [
+                        d,
+                        {
+                          original: result.path,
+                          dist: path.join(outdir, 'vendor')
+                        }
+                      ]
+                    })
+                  )
+                )
+            }
+          )
+        }
+      }
+    ]
+  })
+
   let entryComponentPath
 
   const mappedItems = new Map()
@@ -207,6 +271,23 @@ export async function compile (options = {}) {
         __PPRESS_BASE_URL: JSON.stringify(usableBaseURL),
         __PPRESS_RENDERED_PAGE: JSON.stringify(path.resolve(key))
       },
+      alias: Object.fromEntries(
+        vendorLibs
+          .map((d) => {
+            return [
+              d,
+              findInObj(
+                vendorChunk.metafile.outputs,
+                vendorResolutions[d].original
+                  .replace(process.cwd(), '')
+                  .slice(1),
+                (d) => d.entryPoint
+              )
+            ]
+          })
+          .filter((d) => d[1])
+          .map((d) => [d[0], resolve('.', d[1])])
+      ),
       loader: {
         '.js': 'jsx',
         '.css': 'local-css'
@@ -330,4 +411,10 @@ export async function compile (options = {}) {
 
 function pathToKey (toConvert) {
   return toConvert.replace('/', '__')
+}
+
+function findInObj (obj, value, extract = (d) => d) {
+  return Object.keys(obj).find((k) => {
+    return extract(obj[k]) === value
+  })
 }
