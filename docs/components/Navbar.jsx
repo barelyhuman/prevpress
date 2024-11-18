@@ -1,6 +1,6 @@
 import { normalize } from 'prevpress/router'
 
-export function Navbar () {
+export function Navbar() {
   return (
     <header>
       <nav>

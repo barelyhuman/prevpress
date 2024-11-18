@@ -19,16 +19,16 @@ const defaultOptions = {
   baseURL: '/',
   dev: {
     enabled: false,
-    port: 3000
+    port: 3000,
   },
   root: './content',
-  outdir: './dist'
+  outdir: './dist',
 }
 
 /**
  * @param {typeof defaultOptions} options
  */
-export async function compile (options = {}) {
+export async function compile(options = {}) {
   const config = defu(options, defaultOptions)
   const { root, template, outdir, baseURL, dev } = config
 
@@ -37,18 +37,18 @@ export async function compile (options = {}) {
   const mdxFiles = await glob('./**/*.mdx', {
     absolute: true,
     filesOnly: true,
-    cwd: root
+    cwd: root,
   })
 
   const mdfiles = await glob('./**/*.md', {
     absolute: true,
     filesOnly: true,
-    cwd: root
+    cwd: root,
   })
 
   const folderGroups = {}
 
-  mdxFiles.forEach((file) => {
+  mdxFiles.forEach(file => {
     const key = dirname(file)
     if (!folderGroups[key]) {
       folderGroups[key] = []
@@ -56,7 +56,7 @@ export async function compile (options = {}) {
     folderGroups[key].push(file)
   })
 
-  mdfiles.forEach((file) => {
+  mdfiles.forEach(file => {
     const key = dirname(file)
     if (!folderGroups[key]) {
       folderGroups[key] = []
@@ -65,7 +65,7 @@ export async function compile (options = {}) {
   })
 
   const dirOrderData = {}
-  Object.keys(folderGroups).map(async (dir) => {
+  Object.keys(folderGroups).map(async dir => {
     const orderFilePath = path.join(dir, '_order.json')
     const hasOrderFile = fs.existsSync(orderFilePath)
     if (!hasOrderFile) return
@@ -82,18 +82,18 @@ export async function compile (options = {}) {
     metafile: true,
     external: ['preact'],
     loader: {
-      '.js': 'jsx'
+      '.js': 'jsx',
     },
     define: {
-      __PPRESS_BASE_URL: JSON.stringify(usableBaseURL)
+      __PPRESS_BASE_URL: JSON.stringify(usableBaseURL),
     },
     jsx: 'automatic',
     jsxImportSource: 'preact',
     plugins: [
       mdx({
-        jsxImportSource: 'preact'
-      })
-    ]
+        jsxImportSource: 'preact',
+      }),
+    ],
   }
 
   const baseContext = await esbuild.context(rootBuildOptions)
@@ -104,7 +104,7 @@ export async function compile (options = {}) {
   const output = await baseContext.rebuild()
 
   const markdownOutput = await Promise.all(
-    mdfiles.map(async (x) => {
+    mdfiles.map(async x => {
       const content = await fs.promises.readFile(x, 'utf8')
       const fileName = path.basename(x).replace(path.extname(x), '')
       let destPath = x
@@ -116,14 +116,14 @@ export async function compile (options = {}) {
         destPath = [
           ...basicSplit.slice(0, pushAtIndex),
           fileName,
-          'index.html'
+          'index.html',
         ].join(path.sep)
       }
       return {
         source: x,
         dest: destPath,
         raw: content,
-        html: marked(content)
+        html: marked(content),
       }
     })
   )
@@ -139,15 +139,15 @@ export async function compile (options = {}) {
   const baseContextWatcher = createContextWatcher(baseContext)
   const watcherHandler = {
     root: process.cwd(),
-    onEvent (event) {
+    onEvent(event) {
       if (event.type !== 'change') {
         return false
       }
       return true
     },
-    onBuild () {
+    onBuild() {
       buildContext.build()
-    }
+    },
   }
 
   baseContextWatcher(path.join(root, 'app.js'), watcherHandler)
@@ -157,11 +157,11 @@ export async function compile (options = {}) {
     baseContextWatcher(file, watcherHandler)
   }
 
-  buildContext.hook(CONSTANTS.BUILD_ERROR, (error) => {
+  buildContext.hook(CONSTANTS.BUILD_ERROR, error => {
     console.error('[prevpress]: Building Module failed with error:', error)
   })
 
-  buildContext.hook(CONSTANTS.WATCH_ERROR, (error) => {
+  buildContext.hook(CONSTANTS.WATCH_ERROR, error => {
     console.error('[prevpress]: Watching modules failed with error:', error)
   })
 
@@ -178,10 +178,10 @@ export async function compile (options = {}) {
     'preact/compat/server',
     'preact/compat/jsx-runtime',
     'preact/compat/jsx-dev-runtime',
-    'preact/compat/scheduler'
+    'preact/compat/scheduler',
   ]
   const vendorFilterRegex = `(${vendorLibs
-    .map((d) => d.replace('/', '\\/'))
+    .map(d => d.replace('/', '\\/'))
     .join('|')})`
   let vendorResolutions
   const vendorChunk = await esbuild.build({
@@ -196,37 +196,37 @@ export async function compile (options = {}) {
     plugins: [
       {
         name: 'vendor-chunk-name-paths',
-        setup (builder) {
+        setup(builder) {
           builder.onLoad(
             {
-              filter: new RegExp(vendorFilterRegex)
+              filter: new RegExp(vendorFilterRegex),
             },
-            async (ctx) => {
+            async ctx => {
               if (vendorResolutions) return
               vendorResolutions =
                 vendorResolutions ??
                 Object.fromEntries(
                   await Promise.all(
-                    vendorLibs.map(async (d) => {
+                    vendorLibs.map(async d => {
                       const result = await builder.resolve(d, {
                         kind: 'entry-point',
-                        resolveDir: 'node_modules'
+                        resolveDir: 'node_modules',
                       })
                       return [
                         d,
                         {
                           original: result.path,
-                          dist: path.join(outdir, 'vendor')
-                        }
+                          dist: path.join(outdir, 'vendor'),
+                        },
                       ]
                     })
                   )
                 )
             }
           )
-        }
-      }
-    ]
+        },
+      },
+    ],
   })
 
   let entryComponentPath
@@ -235,7 +235,7 @@ export async function compile (options = {}) {
 
   const pageOutputEntryKeys = outputEntryKeys
     .map((d, i, source) => {
-      const match = source.findIndex((x) => d.replace('.js', '.css') === x)
+      const match = source.findIndex(x => d.replace('.js', '.css') === x)
       if (match > -1) {
         mappedItems.set(d, d.replace('.js', '.css'))
       }
@@ -244,7 +244,7 @@ export async function compile (options = {}) {
       }
       return d
     })
-    .filter((x) => {
+    .filter(x => {
       if (x.endsWith('.css')) return false
       if (x.endsWith(path.join(outdir, '.cache', 'app.js'))) return false
       return true
@@ -269,11 +269,11 @@ export async function compile (options = {}) {
       splitting: true,
       define: {
         __PPRESS_BASE_URL: JSON.stringify(usableBaseURL),
-        __PPRESS_RENDERED_PAGE: JSON.stringify(path.resolve(key))
+        __PPRESS_RENDERED_PAGE: JSON.stringify(path.resolve(key)),
       },
       alias: Object.fromEntries(
         vendorLibs
-          .map((d) => {
+          .map(d => {
             return [
               d,
               findInObj(
@@ -281,19 +281,19 @@ export async function compile (options = {}) {
                 vendorResolutions[d].original
                   .replace(process.cwd(), '')
                   .slice(1),
-                (d) => d.entryPoint
-              )
+                d => d.entryPoint
+              ),
             ]
           })
-          .filter((d) => d[1])
-          .map((d) => [d[0], resolve('.', d[1])])
+          .filter(d => d[1])
+          .map(d => [d[0], resolve('.', d[1])])
       ),
       loader: {
         '.js': 'jsx',
-        '.css': 'local-css'
+        '.css': 'local-css',
       },
       jsx: 'automatic',
-      jsxImportSource: 'preact'
+      jsxImportSource: 'preact',
     })
   }
 
@@ -304,14 +304,14 @@ export async function compile (options = {}) {
     await fs.promises.writeFile(mdOutput.dest, str, 'utf8')
   }
 
-  pageOutputEntryKeys.forEach((key) => {
+  pageOutputEntryKeys.forEach(key => {
     const _key = pathToKey(key)
 
-    buildContext.hook(`${_key}:esm:error`, async (error) => {
+    buildContext.hook(`${_key}:esm:error`, async error => {
       console.error(`Error building \`${key}\`:`, error)
     })
 
-    buildContext.hook(`${_key}:esm:complete`, async (buildOutput) => {
+    buildContext.hook(`${_key}:esm:complete`, async buildOutput => {
       const outputFile = Object.keys(buildOutput.metafile.outputs)[0]
       const cachePath = path.join(outdir, '.cache')
 
@@ -324,14 +324,14 @@ export async function compile (options = {}) {
         finalFile = [
           ...basicSplit.slice(0, pushAtIndex),
           fileName,
-          'index.html'
+          'index.html',
         ].join(path.sep)
       }
 
       const App = await import(path.resolve(entryComponentPath)).then(
-        (d) => d.default
+        d => d.default
       )
-      const mod = await import(path.resolve(key)).then((d) => d.default)
+      const mod = await import(path.resolve(key)).then(d => d.default)
 
       const links = []
       const cssForKey = mappedItems.get(key)
@@ -345,14 +345,14 @@ export async function compile (options = {}) {
                 path.join(outdir, '.cache'),
                 `${usableBaseURL}/public/`
               )
-            )
+            ),
           })
         )
       }
 
       const node = h(App, {
         headProps: {
-          children: links
+          children: links,
         },
         pageProps: {
           children: [h(mod)],
@@ -362,10 +362,10 @@ export async function compile (options = {}) {
               src: outputFile.replace(
                 path.normalize(outdir) + '/',
                 usableBaseURL
-              )
-            })
-          ]
-        }
+              ),
+            }),
+          ],
+        },
       })
 
       const str = renderToString(node)
@@ -387,7 +387,7 @@ export async function compile (options = {}) {
       if (!dev.enabled) {
         await fs.promises.rm(path.join(outdir, '.cache'), {
           force: true,
-          recursive: true
+          recursive: true,
         })
       }
     })
@@ -400,7 +400,7 @@ export async function compile (options = {}) {
     await baseContext.watch()
     await baseContext.serve({
       servedir: outdir,
-      port: dev.port
+      port: dev.port,
     })
     console.log(`Serving assets on port: ${dev.port}`)
   } else {
@@ -409,12 +409,12 @@ export async function compile (options = {}) {
   }
 }
 
-function pathToKey (toConvert) {
+function pathToKey(toConvert) {
   return toConvert.replace('/', '__')
 }
 
-function findInObj (obj, value, extract = (d) => d) {
-  return Object.keys(obj).find((k) => {
+function findInObj(obj, value, extract = d => d) {
+  return Object.keys(obj).find(k => {
     return extract(obj[k]) === value
   })
 }

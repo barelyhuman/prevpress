@@ -40,8 +40,8 @@ prog
       userOptions: userConfig,
       dev: {
         enabled: true,
-        port: +opts.port || 3000
-      }
+        port: +opts.port || 3000,
+      },
     })
   })
 
@@ -57,13 +57,15 @@ prog
 
       const userConfig = await readConfig(opts.config)
 
-      const msg = INFO(`building from ${FILE(contentSource)} to ${FILE(destSource)}`)
+      const msg = INFO(
+        `building from ${FILE(contentSource)} to ${FILE(destSource)}`
+      )
       console.log(`${kleur.gray('[prevpress]')} ${msg}`)
       await compile({
         root: contentSource,
         outdir: destSource,
         userOptions: userConfig,
-        baseURL: opts['base-url']
+        baseURL: opts['base-url'],
       })
       console.log(`\n${SUCCESS('Done!')}`)
       process.exit(0)
@@ -75,11 +77,11 @@ prog
 
 prog.parse(process.argv)
 
-async function readConfig (configPath) {
+async function readConfig(configPath) {
   let config = {}
   const resolvedConfigPath = join(process.cwd(), configPath)
   if (existsSync(resolvedConfigPath)) {
-    config = await import(resolvedConfigPath).then((d) =>
+    config = await import(resolvedConfigPath).then(d =>
       'default' in d ? d.default : d
     )
   }
