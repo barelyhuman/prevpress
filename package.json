@@ -17,7 +17,8 @@
   "scripts": {
     "docs:build": "node ./cli.mjs build ./docs ./dist",
     "docs:dev": "node ./cli.mjs dev ./docs",
-    "test": "playwright test"
+    "test": "playwright test",
+    "fix": "prettier --write ."
   },
   "dependencies": {
     "defu": "^6.1.4",
@@ -30,10 +31,13 @@
     "tiny-glob": "^0.2.9"
   },
   "devDependencies": {
+    "@barelyhuman/prettier-config": "^2.0.2",
     "@mdx-js/esbuild": "^3.0.1",
     "@playwright/test": "^1.42.0",
     "@types/node": "^20.11.24",
     "esbuild": "^0.20.1",
+    "prettier": "^3.3.3",
     "standard": "^17.1.0"
-  }
+  },
+  "prettier": "@barelyhuman/prettier-config"
 }

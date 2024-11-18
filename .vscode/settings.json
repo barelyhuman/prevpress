@@ -1,3 +1,6 @@
 {
-    "standard.autoFixOnSave": true
+  "standard.enable": false,
+  "editor.formatOnSave": true,
+  "prettier.enable": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode"
 }
