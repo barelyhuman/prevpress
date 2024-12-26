@@ -53,6 +53,14 @@ function Navbar() {
         "a",
         {
           class: "hover:bg-zinc-100 text-zinc-700 hover:text-zinc-900 rounded-md px-4 py-2 text-sm",
+          href: normalize("/about"),
+          children: "About"
+        }
+      ) }),
+      /* @__PURE__ */ u("li", { children: /* @__PURE__ */ u(
+        "a",
+        {
+          class: "hover:bg-zinc-100 text-zinc-700 hover:text-zinc-900 rounded-md px-4 py-2 text-sm",
           href: normalize("/guides"),
           children: "Guides"
         }
@@ -76,7 +84,7 @@ function App({ headProps, pageProps }) {
     ] }),
     /* @__PURE__ */ u("body", { children: [
       /* @__PURE__ */ u(Navbar, {}),
-      /* @__PURE__ */ u(Page, { ...pageProps })
+      /* @__PURE__ */ u("article", { class: "w-full mx-auto max-w-3xl mt-10 prose prose-zinc", children: /* @__PURE__ */ u(Page, { ...pageProps }) })
     ] })
   ] });
 }
