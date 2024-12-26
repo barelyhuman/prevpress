@@ -1,5 +1,4 @@
 import { hydrate } from 'preact'
-
 const modDef = mod => ('default' in mod ? mod.default : mod)
 
 // eslint-disable-next-line

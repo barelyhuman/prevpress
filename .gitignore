@@ -16,3 +16,7 @@ yalc.lock
 
 # prevpress
 /.prevpress
+/docs/.prevpress
+
+/dist
+/docs/dist

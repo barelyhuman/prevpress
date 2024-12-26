@@ -33,12 +33,15 @@ prog
 
     const userConfig = await readConfig(opts.config)
 
+    const { baseURL, ...restEsbuildBuildConfig } = userConfig
+
     console.log(INFO(`${kleur.gray('>')} Serving ${FILE(contentSource)}`))
     await compile({
       root: contentSource,
       outdir: destSource,
-      baseURL: userConfig.baseURL ?? opts['base-url'] ?? '/',
+      baseURL: opts['base-url'] ?? baseURL ?? '/',
       userOptions: userConfig,
+      esbuild: restEsbuildBuildConfig,
       dev: {
         enabled: true,
         port: +opts.port || 3000,
@@ -57,6 +60,7 @@ prog
       const destSource = dest || './dist'
 
       const userConfig = await readConfig(opts.config)
+      const { baseURL, ...restEsbuildBuildConfig } = userConfig
 
       const msg = INFO(
         `building from ${FILE(contentSource)} to ${FILE(destSource)}`
@@ -66,7 +70,8 @@ prog
         root: contentSource,
         outdir: destSource,
         userOptions: userConfig,
-        baseURL: userConfig.baseURL ?? opts['base-url'] ?? '/',
+        esbuild: restEsbuildBuildConfig,
+        baseURL: opts['base-url'] ?? baseURL ?? '/',
       })
       console.log(`\n${SUCCESS('Done!')}`)
       process.exit(0)

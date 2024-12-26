@@ -64,7 +64,7 @@ export async function compile(options = {}) {
     folderGroups[key].push(file)
   })
 
-  const rootBuildOptions = {
+  const rootBuildOptions = Object.assign({}, config.esbuild, {
     entryPoints: [...mdxFiles, path.resolve(root, 'app.jsx')],
     format: 'esm',
     bundle: true,
@@ -80,11 +80,12 @@ export async function compile(options = {}) {
     jsx: 'automatic',
     jsxImportSource: 'preact',
     plugins: [
+      ...(config.esbuild?.plugins ?? []),
       mdx({
         jsxImportSource: 'preact',
       }),
     ],
-  }
+  })
 
   const baseContext = await esbuild.context(rootBuildOptions)
 
@@ -92,6 +93,12 @@ export async function compile(options = {}) {
   baseContext.build = baseContext.rebuild
 
   const output = await baseContext.rebuild()
+  const hasCssBundle = Object.keys(output.metafile.outputs).find(d => {
+    return !!output.metafile.outputs[d].cssBundle
+  })
+  const rootCSSBundlePath = hasCssBundle
+    ? output.metafile.outputs[hasCssBundle].cssBundle
+    : undefined
 
   const markdownOutput = await Promise.all(
     mdfiles.map(async x => {
@@ -133,6 +140,7 @@ export async function compile(options = {}) {
       if (event.type !== 'change') {
         return false
       }
+      if (event.file.startsWith(join(config.outdir, '.cache'))) return false
       return true
     },
     onBuild() {
@@ -142,6 +150,7 @@ export async function compile(options = {}) {
 
   baseContextWatcher(path.join(root, 'app.js'), watcherHandler)
   baseContextWatcher('**/*.css', watcherHandler)
+  baseContextWatcher('**/*.jsx', watcherHandler)
 
   for (const file of mdxFiles) {
     baseContextWatcher(file, watcherHandler)
@@ -229,6 +238,7 @@ export async function compile(options = {}) {
       if (match > -1) {
         mappedItems.set(d, d.replace('.js', '.css'))
       }
+
       if (d.endsWith(path.join(outdir, '.cache', 'app.js'))) {
         entryComponentPath = d
       }
@@ -257,6 +267,7 @@ export async function compile(options = {}) {
       outdir: path.join(outdir, 'public'),
       metafile: true,
       splitting: true,
+      plugins: [...(config.esbuild?.plugins ?? [])],
       define: {
         __PPRESS_BASE_URL: JSON.stringify(usableBaseURL),
         __PPRESS_RENDERED_PAGE: JSON.stringify(path.resolve(key)),
@@ -357,6 +368,19 @@ export async function compile(options = {}) {
         )
       }
 
+      if (rootCSSBundlePath) {
+        const publicURL = rootCSSBundlePath
+          .replace(path.join(outdir, '.cache'), `${usableBaseURL}/public/`)
+          .replace(/\/{2,}/g, '/')
+
+        links.push(
+          h('link', {
+            rel: 'stylesheet',
+            href: publicURL,
+          })
+        )
+      }
+
       const node = h(App, {
         headProps: {
           children: links,
@@ -386,6 +410,20 @@ export async function compile(options = {}) {
         )
         await mkdir(dirname(resolve(cssOutpath)), { recursive: true })
         await fs.promises.copyFile(resolve(cssForKey), resolve(cssOutpath))
+      }
+
+      if (rootCSSBundlePath) {
+        const cssOutpath = path.join(
+          rootCSSBundlePath.replace(
+            path.join(outdir, '.cache'),
+            path.join(outdir, 'public')
+          )
+        )
+        await mkdir(dirname(resolve(cssOutpath)), { recursive: true })
+        await fs.promises.copyFile(
+          resolve(rootCSSBundlePath),
+          resolve(cssOutpath)
+        )
       }
 
       await mkdir(dirname(finalFile), { recursive: true })
