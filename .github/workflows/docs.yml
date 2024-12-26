@@ -22,7 +22,7 @@ jobs:
       - name: Install and Build
         run: |
           npm ci
-          node cli.mjs build ./docs ./dist --base-url="/prevpress/"
+          node cli.mjs -c ./docs/prevpress.config.js build ./docs ./dist --base-url="/prevpress/"
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
