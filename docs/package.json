@@ -1,0 +1,18 @@
+{
+  "name": "docs",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "prevpress": "workspace:*"
+  },
+  "scripts": {
+    "dev": "prevpress dev .",
+    "build": "prevpress build . ./dist"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.17",
+    "postcss": "^8.4.49",
+    "postcss-load-config": "^6.0.1",
+    "autoprefixer": "^10.4.20"
+  }
+}

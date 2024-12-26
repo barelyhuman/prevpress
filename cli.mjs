@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-import sade from 'sade'
-import { compile } from './index.js'
+import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { existsSync, readFileSync } from 'node:fs'
 import kleur from 'kleur'
+import sade from 'sade'
+import { compile } from './index.js'
 
 const FILE = kleur.bold().underline().white
 const SUCCESS = kleur.bold().green

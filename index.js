@@ -1,16 +1,16 @@
+import fs from 'node:fs'
+import path, { dirname, join, resolve } from 'node:path'
 import mdx from '@mdx-js/esbuild'
 import { defu } from 'defu'
 import esbuild from 'esbuild'
 import { CONSTANTS, createContext } from 'esbuild-multicontext'
 import { createContextWatcher } from 'esbuild-multicontext/watcher'
-import fs from 'node:fs'
-import path, { dirname, join, resolve } from 'node:path'
 import { h } from 'preact'
 import renderToString from 'preact-render-to-string'
 
-import { marked } from 'marked'
 import { mkdir } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
+import { marked } from 'marked'
 import glob from 'tiny-glob'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))

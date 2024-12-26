@@ -1,5 +1,5 @@
-import { access, readFile } from 'fs/promises'
 import { resolve } from 'path'
+import { access, readFile } from 'fs/promises'
 import postcss from 'postcss'
 import loadConfig from 'postcss-load-config'
 

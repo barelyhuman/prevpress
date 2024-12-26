@@ -17,11 +17,15 @@ jobs:
       - name: Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.9.0
 
       - name: Install and Build
         run: |
-          npm ci
+          pnpm i --frozen-lockfile
           node cli.mjs -c ./docs/prevpress.config.js build ./docs ./dist --base-url="/prevpress/"
 
       - name: Deploy 🚀
