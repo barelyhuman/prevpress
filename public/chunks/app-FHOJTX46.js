@@ -70,7 +70,10 @@ function Navbar() {
 }
 function App({ headProps, pageProps }) {
   return /* @__PURE__ */ u("html", { children: [
-    /* @__PURE__ */ u("head", { ...headProps }),
+    /* @__PURE__ */ u("head", { ...headProps, children: [
+      /* @__PURE__ */ u("title", { children: "PrevPress" }),
+      ...headProps.children
+    ] }),
     /* @__PURE__ */ u("body", { children: [
       /* @__PURE__ */ u(Navbar, {}),
       /* @__PURE__ */ u(Page, { ...pageProps })
