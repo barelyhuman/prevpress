@@ -4,7 +4,6 @@ import {
 } from "./chunks/chunk-ZQXBMIZ5.js";
 
 // runtime/client.js
-var Component = await import("./chunks/-4UO5AMYT.js").then(
-  (mod) => "default" in mod ? mod.default : mod
-);
+var modDef = (mod) => "default" in mod ? mod.default : mod;
+var Component = modDef(await import("./chunks/-CGRL3QJU.js"));
 E(/* @__PURE__ */ u(Component, {}), document.getElementById("root"));

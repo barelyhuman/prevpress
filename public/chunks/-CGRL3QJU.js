@@ -131,11 +131,15 @@ function D(n, t2) {
 }
 
 // dist/.cache/index.js
+var counter_default = {
+  buttonStyle: "counter_buttonStyle"
+};
 function Counter() {
   const [count, setCount] = p(0);
   return /* @__PURE__ */ u(
     "button",
     {
+      class: counter_default.buttonStyle,
       onClick: () => {
         setCount(count + 1);
       },

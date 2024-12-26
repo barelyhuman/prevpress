@@ -1,0 +1,14 @@
+/* docs/components/counter.module.css */
+.counter_buttonStyle {
+  background: black;
+  border: 0px;
+  border-radius: 4px;
+  color: white;
+  outline: black;
+  padding: 0.5em 2em;
+  font-size: 1rem;
+}
+.counter_buttonStyle:hover {
+  background: #181819;
+  cursor: pointer;
+}
