@@ -1,8 +1,8 @@
 import {
   g,
-  u,
-  y
-} from "./chunk-SY5NYGLA.js";
+  k,
+  u
+} from "./chunk-3GGP4NU6.js";
 
 // dist/.cache/app.js
 function Page({
@@ -11,25 +11,25 @@ function Page({
   scripts,
   ...props
 }) {
-  const sidebarRendered = sidebarItems.sort((x, y2) => x.order - y2.order).map((x) => y("li", {}, y("a", { href: x.slug }, x.label)));
-  return y(
+  const sidebarRendered = sidebarItems.sort((x, y) => x.order - y.order).map((x) => g("li", {}, g("a", { href: x.slug }, x.label)));
+  return g(
     "html",
     {
       ...props
     },
-    y("head", {}),
-    y(
+    g("head", {}),
+    g(
       "body",
       {},
-      sidebarItems.length ? y("aside", {}, sidebarRendered) : null,
-      y(
+      sidebarItems.length ? g("aside", {}, sidebarRendered) : null,
+      g(
         "div",
         {
           id: "root"
         },
         children
       ),
-      y(g, {}, scripts)
+      g(k, {}, scripts)
     )
   );
 }

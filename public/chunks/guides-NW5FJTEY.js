@@ -1,15 +1,21 @@
 import {
+  k,
   u
-} from "./chunk-4MLCTB66.js";
+} from "./chunk-Q6TV67ZS.js";
 
-// dist/.cache/guides/styling.js
+// dist/.cache/guides/index.js
 function _createMdxContent(props) {
   const _components = {
     h1: "h1",
+    p: "p",
     ...props.components
   };
-  return u(_components.h1, {
-    children: "Styling everything"
+  return u(k, {
+    children: [u(_components.h1, {
+      children: "Guides"
+    }), "\n", u(_components.p, {
+      children: "Getting Started"
+    })]
   });
 }
 function MDXContent(props = {}) {
