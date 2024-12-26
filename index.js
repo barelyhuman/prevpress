@@ -64,16 +64,6 @@ export async function compile(options = {}) {
     folderGroups[key].push(file)
   })
 
-  const dirOrderData = {}
-  Object.keys(folderGroups).map(async dir => {
-    const orderFilePath = path.join(dir, '_order.json')
-    const hasOrderFile = fs.existsSync(orderFilePath)
-    if (!hasOrderFile) return
-    const data = fs.readFileSync(orderFilePath, 'utf8')
-    const orderArray = JSON.parse(data)
-    dirOrderData[dir] = orderArray
-  })
-
   const rootBuildOptions = {
     entryPoints: [...mdxFiles, path.resolve(root, 'app.jsx')],
     format: 'esm',
