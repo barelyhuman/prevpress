@@ -12,3 +12,4 @@ node_modules
 yalc.lock
 
 /.prevpress
+.DS_Store

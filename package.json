@@ -16,7 +16,7 @@
   },
   "scripts": {
     "docs:build": "node ./cli.mjs build ./docs ./dist",
-    "docs:dev": "node ./cli.mjs dev ./docs",
+    "docs:dev": "node ./cli.mjs -c ./docs/prevpress.config.js dev ./docs",
     "test": "playwright test",
     "fix": "prettier --write ."
   },

@@ -19,12 +19,13 @@ const version = (() =>
 prog
   .version(version)
   .option('--help, -h', 'An example global flag')
-  .option('--config,-c', 'Config to use', 'prevpress.config.js')
+  .option('--config, -c', 'Config to use', 'prevpress.config.js')
 
 prog
   .command('dev [content]')
   .describe('Serve the content directory')
   .option('--port, -p', 'Port to serve on', 3000)
+  .option('--base-url', 'Base URL to use for assets', '')
   .example('dev ./content')
   .action(async (content, opts) => {
     const contentSource = content || './content'
@@ -36,7 +37,7 @@ prog
     await compile({
       root: contentSource,
       outdir: destSource,
-      baseURL: opts['base-url'],
+      baseURL: userConfig.baseURL ?? opts['base-url'] ?? '/',
       userOptions: userConfig,
       dev: {
         enabled: true,
@@ -48,7 +49,7 @@ prog
 prog
   .command('build [content] [dest]')
   .describe('Build the content directory')
-  .option('--base-url', 'Base URL to use for assets', '/')
+  .option('--base-url', 'Base URL to use for assets', '')
   .example('build ./content ./dist')
   .action(async (content, dest, opts) => {
     try {
@@ -65,7 +66,7 @@ prog
         root: contentSource,
         outdir: destSource,
         userOptions: userConfig,
-        baseURL: opts['base-url'],
+        baseURL: userConfig.baseURL ?? opts['base-url'] ?? '/',
       })
       console.log(`\n${SUCCESS('Done!')}`)
       process.exit(0)
