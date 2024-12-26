@@ -5,7 +5,10 @@ import './app.css'
 export default function App({ headProps, pageProps }) {
   return (
     <html>
-      <head {...headProps} />
+      <head {...headProps}>
+        <title>PrevPress</title>
+        {...headProps.children}
+      </head>
       <body>
         <Navbar />
         <Page {...pageProps} />
