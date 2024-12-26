@@ -15,8 +15,9 @@
     "./router": "./router.js"
   },
   "scripts": {
-    "docs:build": "node ./cli.mjs -c ./docs/prevpress.config.js build ./docs ./dist",
+    "docs:build": "pnpm --filter 'docs' build",
     "docs:dev": "pnpm --filter 'docs' dev",
+    "docs:build:github":"pnpm --filter 'docs' build:github",
     "test": "playwright test",
     "fix": "biome check --write .; prettier --write ./**/*.{yml,yaml}",
     "check": "biome check ."

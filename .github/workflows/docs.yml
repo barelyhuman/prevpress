@@ -26,10 +26,10 @@ jobs:
       - name: Install and Build
         run: |
           pnpm i --frozen-lockfile
-          node cli.mjs -c ./docs/prevpress.config.js build ./docs ./dist --base-url="/prevpress/"
+          pnpm docs:build:github
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages
-          folder: dist
+          folder: docs/dist

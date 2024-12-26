@@ -7,7 +7,8 @@
   },
   "scripts": {
     "dev": "prevpress dev .",
-    "build": "prevpress build . ./dist"
+    "build": "prevpress build . ./dist",
+    "build:github": "prevpress build --base-url='/prevpress/' . ./dist"
   },
   "devDependencies": {
     "tailwindcss": "^3.4.17",
