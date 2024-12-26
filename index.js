@@ -292,6 +292,23 @@ export async function compile(options = {}) {
         '.js': 'jsx',
         '.css': 'local-css',
       },
+      alias: Object.fromEntries(
+        vendorLibs
+          .map(d => {
+            return [
+              d,
+              findInObj(
+                vendorChunk.metafile.outputs,
+                vendorResolutions[d].original
+                  .replace(process.cwd(), '')
+                  .slice(1),
+                d => d.entryPoint
+              ),
+            ]
+          })
+          .filter(d => d[1])
+          .map(d => [d[0], resolve('.', d[1])])
+      ),
       jsx: 'automatic',
       jsxImportSource: 'preact',
     })

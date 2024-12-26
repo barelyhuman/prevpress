@@ -11,5 +11,8 @@ node_modules
 .yalc
 yalc.lock
 
-/.prevpress
+# mac
 .DS_Store
+
+# prevpress
+/.prevpress
