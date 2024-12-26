@@ -1,7 +1,7 @@
 import {
   k,
   u
-} from "./chunk-Q6TV67ZS.js";
+} from "./chunk-4M25HWUF.js";
 
 // dist/.cache/guides/index.js
 function _createMdxContent(props) {

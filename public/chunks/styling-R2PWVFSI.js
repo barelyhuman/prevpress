@@ -1,6 +1,6 @@
 import {
   u
-} from "./chunk-SMJ6L4U6.js";
+} from "./chunk-PHPZMU4L.js";
 
 // dist/.cache/guides/styling.js
 function _createMdxContent(props) {
