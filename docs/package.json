@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@tailwindcss/typography": "^0.5.15",
     "prevpress": "workspace:*"
   },
   "scripts": {
@@ -11,9 +12,9 @@
     "build:github": "prevpress build --base-url='/prevpress/' . ./dist"
   },
   "devDependencies": {
-    "tailwindcss": "^3.4.17",
+    "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
     "postcss-load-config": "^6.0.1",
-    "autoprefixer": "^10.4.20"
+    "tailwindcss": "^3.4.17"
   }
 }

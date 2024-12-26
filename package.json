@@ -17,10 +17,11 @@
   "scripts": {
     "docs:build": "pnpm --filter 'docs' build",
     "docs:dev": "pnpm --filter 'docs' dev",
-    "docs:build:github":"pnpm --filter 'docs' build:github",
+    "docs:build:github": "pnpm --filter 'docs' build:github",
     "test": "playwright test",
     "fix": "biome check --write .; prettier --write ./**/*.{yml,yaml}",
-    "check": "biome check ."
+    "check": "biome check .",
+    "prepare": "husky"
   },
   "dependencies": {
     "@biomejs/biome": "^1.9.4",
@@ -39,6 +40,16 @@
     "@barelyhuman/prettier-config": "^2.0.2",
     "@playwright/test": "^1.42.0",
     "@types/node": "^20.11.24",
+    "husky": "^9.1.7",
+    "nano-staged": "^0.8.0",
     "prettier": "^3.4.2"
+  },
+  "nano-staged": {
+    "*.{mdx,jsx,js}": [
+      "biome check --write"
+    ],
+    "*.{json,yaml,yml}": [
+      "prettier --write"
+    ]
   }
 }

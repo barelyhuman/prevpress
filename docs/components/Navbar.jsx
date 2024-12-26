@@ -17,6 +17,14 @@ export function Navbar() {
           <li>
             <a
               class="hover:bg-zinc-100 text-zinc-700 hover:text-zinc-900 rounded-md px-4 py-2 text-sm"
+              href={normalize('/about')}
+            >
+              About
+            </a>
+          </li>
+          <li>
+            <a
+              class="hover:bg-zinc-100 text-zinc-700 hover:text-zinc-900 rounded-md px-4 py-2 text-sm"
               href={normalize('/guides')}
             >
               Guides
