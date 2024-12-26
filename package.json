@@ -10,14 +10,20 @@
   "bin": {
     "prevpress": "./cli.mjs"
   },
+  "exports": {
+    "./page": "./page.js",
+    "./router": "./router.js"
+  },
   "scripts": {
     "docs:build": "node ./cli.mjs build ./docs ./dist",
-    "docs:dev": "node ./cli.mjs dev ./docs",
-    "test": "playwright test"
+    "docs:dev": "node ./cli.mjs -c ./docs/prevpress.config.js dev ./docs",
+    "test": "playwright test",
+    "fix": "prettier --write ."
   },
   "dependencies": {
     "defu": "^6.1.4",
-    "esbuild-multicontext": "^0.8.0",
+    "esbuild-multicontext": "^0.11.0",
+    "kleur": "^4.1.5",
     "marked": "^12.0.0",
     "preact": ">=10",
     "preact-render-to-string": "^6.4.0",

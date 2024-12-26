@@ -6,4 +6,13 @@ node_modules
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# yalc
+.yalc
+yalc.lock
+
+# mac
+.DS_Store
+
+# prevpress
 /.prevpress
