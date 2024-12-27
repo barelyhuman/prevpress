@@ -84,7 +84,7 @@ function App({ headProps, pageProps }) {
     ] }),
     /* @__PURE__ */ u("body", { children: [
       /* @__PURE__ */ u(Navbar, {}),
-      /* @__PURE__ */ u("article", { class: "w-full mx-auto max-w-3xl mt-10 prose prose-zinc", children: /* @__PURE__ */ u(Page, { ...pageProps }) })
+      /* @__PURE__ */ u("article", { class: "mx-auto mt-10 w-full max-w-3xl prose prose-zinc", children: /* @__PURE__ */ u(Page, { ...pageProps }) })
     ] })
   ] });
 }
