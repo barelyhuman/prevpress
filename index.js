@@ -1,10 +1,11 @@
 import fs from 'node:fs'
 import path, { dirname, join, resolve } from 'node:path'
 import mdx from '@mdx-js/esbuild'
+import chokidar from 'chokidar'
 import { defu } from 'defu'
 import esbuild from 'esbuild'
 import { CONSTANTS, createContext } from 'esbuild-multicontext'
-import { createContextWatcher } from 'esbuild-multicontext/watcher'
+import kleur from 'kleur'
 import { h } from 'preact'
 import renderToString from 'preact-render-to-string'
 
@@ -31,7 +32,6 @@ const defaultOptions = {
 export async function compile(options = {}) {
   const config = defu(options, defaultOptions)
   const { root, template, outdir, baseURL, dev } = config
-
   const usableBaseURL = !baseURL.endsWith('/') ? join(baseURL, '/') : baseURL
 
   const mdxFiles = await glob('./**/*.mdx', {
@@ -130,31 +130,22 @@ export async function compile(options = {}) {
 
   const buildContext = createContext()
 
-  // Watch the context and decide if needs to rebuild itself on
-  // any additional files that we decide to watch and react too.
-  // in this case the mdx result that's generated
-  const baseContextWatcher = createContextWatcher(baseContext)
-  const watcherHandler = {
-    root: process.cwd(),
-    onEvent(event) {
-      if (event.type !== 'change') {
-        return false
-      }
-      if (event.file.startsWith(join(config.outdir, '.cache'))) return false
-      return true
+  const watcher = chokidar.watch(config.root, {
+    atomic: true,
+    ignoreInitial: true,
+    ignored: file => {
+      return (
+        file.startsWith('node_modules') ||
+        file.startsWith(join(config.outdir)) ||
+        file.startsWith('.prevpress')
+      )
     },
-    onBuild() {
-      buildContext.build()
-    },
-  }
+  })
 
-  baseContextWatcher(path.join(root, 'app.js'), watcherHandler)
-  baseContextWatcher('**/*.css', watcherHandler)
-  baseContextWatcher('**/*.jsx', watcherHandler)
-
-  for (const file of mdxFiles) {
-    baseContextWatcher(file, watcherHandler)
-  }
+  watcher.on('change', file => {
+    console.log(kleur.dim('[prevpress] File Changed:'), kleur.white(file))
+    buildContext.build()
+  })
 
   buildContext.hook(CONSTANTS.BUILD_ERROR, error => {
     console.error('[prevpress]: Building Module failed with error:', error)

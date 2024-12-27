@@ -11,7 +11,7 @@ export default function App({ headProps, pageProps }) {
       </head>
       <body>
         <Navbar />
-        <article class="w-full mx-auto max-w-3xl mt-10 prose prose-zinc">
+        <article class="mx-auto mt-10 w-full max-w-3xl prose prose-zinc">
           <Page {...pageProps} />
         </article>
       </body>

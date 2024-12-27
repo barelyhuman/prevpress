@@ -1,6 +1,9 @@
 {
   "standard.enable": false,
+  "prettier.enable": false,
   "editor.formatOnSave": true,
-  "prettier.enable": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode"
+  "editor.defaultFormatter": "biomejs.biome",
+  "[javascript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  }
 }
