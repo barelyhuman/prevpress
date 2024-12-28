@@ -145,6 +145,7 @@ export async function compile(options = {}) {
   watcher.on('change', file => {
     console.log(kleur.dim('[prevpress] File Changed:'), kleur.white(file))
     buildContext.build()
+    baseContext.build()
   })
 
   buildContext.hook(CONSTANTS.BUILD_ERROR, error => {
